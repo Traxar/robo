@@ -33,7 +33,7 @@ pub fn main() !void {
                 c.DisableCursor();
         }
         if (c.IsKeyPressed(c.KEY_Q)) {
-            part = if (part == .cone) .cube else .cone;
+            part = if (part == .tetra) .cube else .tetra;
         }
         if (c.IsCursorHidden()) {
             c.UpdateCamera(&camera, c.CAMERA_FREE);
