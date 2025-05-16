@@ -56,7 +56,7 @@ pub const Robot = struct {
                 .rotation = Placement.Rotation.up,
             },
         };
-        const eps = 1e-8;
+        const eps = 1e-5;
         var closest_mesh_distance = std.math.floatMax(f32);
         var closest_connection: ?Placement = null;
         var closest_part_index: ?usize = null;
