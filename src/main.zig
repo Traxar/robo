@@ -36,7 +36,7 @@ pub fn main() !void {
             else
                 c.GetScreenToWorldRay(c.GetMousePosition(), camera);
 
-        preview = robot.rayCollisionConnections(ray);
+        const part_index, preview = robot.rayCollision(ray);
         if (preview) |connection| {
             preview = connection
                 .place(.{ .position = .{ 0, 0, -1 }, .rotation = Placement.Rotation.up })
@@ -48,7 +48,7 @@ pub fn main() !void {
                 try robot.add(p, .cube, c.BEIGE);
         }
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_RIGHT)) {
-            if (robot.rayCollisionParts(ray)) |index| {
+            if (part_index) |index| {
                 robot.remove(index);
             }
         }

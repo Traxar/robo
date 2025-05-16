@@ -48,38 +48,39 @@ pub const Robot = struct {
         robot.parts.swapRemove(part_index);
     }
 
-    pub fn rayCollisionConnections(robot: Robot, ray: Ray) ?Placement {
-        if (robot.parts.len == 0) return Placement.zero;
-        var closest_collision = RayCollision{};
-        closest_collision.distance = std.math.floatMax(f32);
+    pub fn rayCollision(robot: Robot, ray: Ray) struct { part_index: ?usize, connection: ?Placement } {
+        if (robot.parts.len == 0) return .{
+            .part_index = null,
+            .connection = .{
+                .position = .{ 0, 0, -1 },
+                .rotation = Placement.Rotation.up,
+            },
+        };
+        const eps = 1e-8;
+        var closest_mesh_distance = std.math.floatMax(f32);
         var closest_connection: ?Placement = null;
-        for (0..robot.parts.len) |i| {
-            const part = robot.parts.get(i);
-            for (part.part.connections()) |connection| {
-                const global = part.placement.place(connection);
-                const collision = global.rayCollision(ray);
-                if (collision.hit and collision.distance < closest_collision.distance) {
-                    closest_collision = collision;
-                    closest_connection = global;
-                }
-            }
-        }
-        return closest_connection;
-    }
-
-    /// returns index of hit part
-    pub fn rayCollisionParts(robot: Robot, ray: Ray) ?usize {
-        var closest_collision = RayCollision{};
-        closest_collision.distance = std.math.floatMax(f32);
         var closest_part_index: ?usize = null;
         for (0..robot.parts.len) |i| {
             const part = robot.parts.get(i);
-            const collision = c.GetRayCollisionMesh(ray, part.part.mesh(), part.placement.mat());
-            if (collision.hit and collision.distance < closest_collision.distance) {
-                closest_collision = collision;
+            const mesh_collision = c.GetRayCollisionMesh(ray, part.part.mesh(), part.placement.mat());
+            if (mesh_collision.hit and mesh_collision.distance < closest_mesh_distance) {
+                closest_mesh_distance = mesh_collision.distance;
                 closest_part_index = i;
+                closest_connection = null;
+                var closest_connection_distance = closest_mesh_distance + eps;
+                for (part.part.connections()) |part_connection| {
+                    const connection = part.placement.place(part_connection);
+                    const connection_collision = connection.rayCollision(ray);
+                    if (connection_collision.hit and connection_collision.distance < closest_connection_distance) {
+                        closest_connection_distance = connection_collision.distance;
+                        closest_connection = connection;
+                    }
+                }
             }
         }
-        return closest_part_index;
+        return .{
+            .part_index = closest_part_index,
+            .connection = closest_connection,
+        };
     }
 };
