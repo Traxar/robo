@@ -12,6 +12,11 @@ var allocator = gpa.allocator();
 var selected_part = Parts.Part.cube;
 var robot: Robot = undefined;
 var preview: ?Placement = null;
+var placement_modifier = Placement{
+    .position = .{ 0, 0, -1 },
+    .rotation = Placement.Rotation.up,
+};
+var color = c.BEIGE;
 
 pub fn main() !void {
     try init();
@@ -35,24 +40,41 @@ pub fn main() !void {
                 misc.CameraRay(camera)
             else
                 c.GetScreenToWorldRay(c.GetMousePosition(), camera);
-
-        const part_index, preview = robot.rayCollision(ray);
+        const ray_result = robot.rayCollision(ray);
+        const part_index = ray_result.part_index;
+        preview = ray_result.connection;
         if (preview) |connection| {
-            preview = connection
-                .place(.{ .position = .{ 0, 0, -1 }, .rotation = Placement.Rotation.up })
+            preview = connection.place(placement_modifier)
                 .place(selected_part.connections()[0].inv());
         }
 
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_LEFT)) {
             if (preview) |p|
-                try robot.add(p, .cube, c.BEIGE);
+                try robot.add(p, .cube, color);
         }
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_RIGHT)) {
             if (part_index) |index| {
                 robot.remove(index);
             }
         }
-
+        if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_MIDDLE)) {
+            placement_modifier = placement_modifier.place(.{
+                .position = @splat(0),
+                .rotation = Placement.Rotation.mirror,
+            });
+        }
+        if (c.GetMouseWheelMove() > 0) {
+            placement_modifier = placement_modifier.place(.{
+                .position = @splat(0),
+                .rotation = Placement.Rotation.z270,
+            });
+        }
+        if (c.GetMouseWheelMove() < 0) {
+            placement_modifier = placement_modifier.place(.{
+                .position = @splat(0),
+                .rotation = Placement.Rotation.z90,
+            });
+        }
         if (c.IsKeyDown('Z')) {
             c.DrawText(c.GetKeyName('Z'), 100, 100, 10, c.BLACK);
         }
