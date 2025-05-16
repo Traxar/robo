@@ -67,13 +67,20 @@ pub const Robot = struct {
                 closest_mesh_distance = mesh_collision.distance;
                 closest_part_index = i;
                 closest_connection = null;
-                var closest_connection_distance = closest_mesh_distance + eps;
+                const max = closest_mesh_distance + eps;
+                const min = closest_mesh_distance - eps;
+                var closest_connection_distance = max;
                 for (part.part.connections()) |part_connection| {
                     const connection = part.placement.place(part_connection);
                     const connection_collision = connection.rayCollision(ray);
-                    if (connection_collision.hit and connection_collision.distance < closest_connection_distance) {
-                        closest_connection_distance = connection_collision.distance;
-                        closest_connection = connection;
+                    if (connection_collision.hit and connection_collision.distance <= closest_connection_distance) {
+                        if (connection_collision.distance < min) {
+                            closest_connection = null;
+                            break;
+                        } else {
+                            closest_connection_distance = connection_collision.distance;
+                            closest_connection = connection;
+                        }
                     }
                 }
             }
