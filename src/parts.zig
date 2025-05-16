@@ -15,6 +15,8 @@ pub fn loadAssets() void {
 
 pub const Part = enum {
     cube,
+    //tetra,
+    cone,
 
     pub fn mesh(part: Part) c.Mesh {
         const i: usize = @intFromEnum(part);
@@ -56,6 +58,26 @@ pub const Part = enum {
                 .{
                     .position = .{ 0, 0, 0 },
                     .rotation = Placement.Rotation.up,
+                },
+            }),
+            // .tetra => misc.sliceFromArray([_]Placement{
+            //     .{
+            //         .position = .{ 0, 0, 0 },
+            //         .rotation = Placement.Rotation.down,
+            //     },
+            //     .{
+            //         .position = .{ 0, 0, 0 },
+            //         .rotation = Placement.Rotation.left,
+            //     },
+            //     .{
+            //         .position = .{ 0, 0, 0 },
+            //         .rotation = Placement.Rotation.back,
+            //     },
+            // }),
+            .cone => misc.sliceFromArray([_]Placement{
+                .{
+                    .position = .{ 0, 0, 0 },
+                    .rotation = Placement.Rotation.down,
                 },
             }),
         };

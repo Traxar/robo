@@ -17,6 +17,7 @@ var placement_modifier = Placement{
     .rotation = Placement.Rotation.up,
 };
 var color = c.BEIGE;
+var part = Parts.Part.cube;
 
 pub fn main() !void {
     try init();
@@ -30,6 +31,9 @@ pub fn main() !void {
                 c.EnableCursor()
             else
                 c.DisableCursor();
+        }
+        if (c.IsKeyPressed(c.KEY_Q)) {
+            part = if (part == .cone) .cube else .cone;
         }
         if (c.IsCursorHidden()) {
             c.UpdateCamera(&camera, c.CAMERA_FREE);
@@ -50,7 +54,7 @@ pub fn main() !void {
 
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_LEFT)) {
             if (preview) |p|
-                try robot.add(p, .cube, color);
+                try robot.add(p, part, color);
         }
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_RIGHT)) {
             if (part_index) |index| {
@@ -108,7 +112,7 @@ fn render() void {
     c.BeginMode3D(camera);
     defer c.EndMode3D();
     robot.render();
-    if (preview) |p| Parts.Part.cube.render(p, c.BLACK, true);
+    if (preview) |p| part.render(p, c.BLACK, true);
 }
 
 fn deinit() void {
