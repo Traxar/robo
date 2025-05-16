@@ -75,7 +75,7 @@ pub fn PlacementType(T: type) type {
         /// return rayCollision of a connection at placement
         pub fn rayCollision(placement: Placement, ray: c.Ray) c.RayCollision {
             const miss = c.RayCollision{};
-            const eps: f32 = 1e-8;
+            const eps = 1e-8;
             const inv_matrix = placement.inv().mat();
             const dir = misc.Vector3Rotate(ray.direction, inv_matrix);
             if (dir.z <= eps) return miss; //ray looks in wrong direction
