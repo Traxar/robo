@@ -9,6 +9,7 @@ const Robot = @import("robot.zig").Robot;
 var camera: c.Camera3D = undefined;
 var gpa = std.heap.DebugAllocator(.{}){};
 var allocator = gpa.allocator();
+var selected_part = Parts.Part.cube;
 var robot: Robot = undefined;
 var preview: ?Placement = null;
 
@@ -37,7 +38,9 @@ pub fn main() !void {
 
         preview = robot.rayCollisionConnections(ray);
         if (preview) |connection| {
-            preview = connection.place(.{ .position = .{ 0, 0, -1 }, .rotation = Placement.Rotation.up });
+            preview = connection
+                .place(.{ .position = .{ 0, 0, -1 }, .rotation = Placement.Rotation.up })
+                .place(selected_part.connections()[0].inv());
         }
 
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_LEFT)) {
