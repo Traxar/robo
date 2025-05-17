@@ -58,7 +58,6 @@ pub const Robot = struct {
         };
         const eps = 1e-5;
         var closest_mesh_distance = std.math.floatMax(f32);
-        var closest_connection: ?Placement = null;
         var closest_part_index: ?usize = null;
         for (0..robot.parts.len) |i| {
             const part = robot.parts.get(i);
@@ -66,21 +65,24 @@ pub const Robot = struct {
             if (mesh_collision.hit and mesh_collision.distance < closest_mesh_distance) {
                 closest_mesh_distance = mesh_collision.distance;
                 closest_part_index = i;
-                closest_connection = null;
-                const max = closest_mesh_distance + eps;
-                const min = closest_mesh_distance - eps;
-                var closest_connection_distance = max;
-                for (part.part.connections()) |part_connection| {
-                    const connection = part.placement.place(part_connection);
-                    const connection_collision = connection.rayCollision(ray);
-                    if (connection_collision.hit and connection_collision.distance <= closest_connection_distance) {
-                        if (connection_collision.distance < min) {
-                            closest_connection = null;
-                            break;
-                        } else {
-                            closest_connection_distance = connection_collision.distance;
-                            closest_connection = connection;
-                        }
+            }
+        }
+        var closest_connection: ?Placement = null;
+        if (closest_part_index != null) {
+            const max = closest_mesh_distance + eps;
+            const min = closest_mesh_distance - eps;
+            var closest_connection_distance = max;
+            const part = robot.parts.get(closest_part_index.?);
+            for (part.part.connections()) |part_connection| {
+                const connection = part.placement.place(part_connection);
+                const connection_collision = connection.rayCollision(ray);
+                if (connection_collision.hit and connection_collision.distance <= closest_connection_distance) {
+                    if (connection_collision.distance < min) {
+                        closest_connection = null;
+                        break;
+                    } else {
+                        closest_connection_distance = connection_collision.distance;
+                        closest_connection = connection;
                     }
                 }
             }
