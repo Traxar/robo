@@ -28,7 +28,7 @@ pub const Part = enum {
         const i: usize = @intFromEnum(part);
         assets[i].transform = placement.mat();
         if (preview)
-            c.DrawModelWires(assets[i], misc.vec(0, 0, 0), 1, color)
+            c.DrawModel(assets[i], misc.vec(0, 0, 0), 1, c.ColorAlpha(color, 0.2))
         else
             c.DrawModel(assets[i], misc.vec(0, 0, 0), 1, color);
     }
