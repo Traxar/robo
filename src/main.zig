@@ -33,7 +33,7 @@ pub fn main() !void {
                 c.DisableCursor();
         }
         if (c.IsKeyPressed(c.KEY_Q)) {
-            part = if (part == .tetra) .cube else .tetra;
+            part = @enumFromInt(@mod(@intFromEnum(part) +% 1, @typeInfo(Parts.Part).@"enum".fields.len));
         }
         if (c.IsCursorHidden()) {
             c.UpdateCamera(&camera, c.CAMERA_FREE);
@@ -93,7 +93,7 @@ pub fn main() !void {
 fn init() !void {
     c.InitWindow(1280, 720, "hello world");
     //c.DisableCursor();
-    //c.SetTargetFPS(60);
+    c.SetTargetFPS(60);
     camera = .{
         .position = vec(10, 10, 10),
         .target = vec(0, 0, 0),

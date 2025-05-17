@@ -15,6 +15,8 @@ pub fn loadAssets() void {
 
 pub const Part = enum {
     cube,
+    inner,
+    prism,
     tetra,
 
     pub fn mesh(part: Part) c.Mesh {
@@ -33,7 +35,7 @@ pub const Part = enum {
 
     pub inline fn connections(part: Part) []const Placement {
         return switch (part) {
-            .cube => misc.sliceFromArray([_]Placement{
+            .cube, .inner => misc.sliceFromArray([_]Placement{
                 .{
                     .position = .{ 0, 0, 0 },
                     .rotation = Placement.Rotation.down,
@@ -57,6 +59,24 @@ pub const Part = enum {
                 .{
                     .position = .{ 0, 0, 0 },
                     .rotation = Placement.Rotation.up,
+                },
+            }),
+            .prism => misc.sliceFromArray([_]Placement{
+                .{
+                    .position = .{ 0, 0, 0 },
+                    .rotation = Placement.Rotation.down,
+                },
+                .{
+                    .position = .{ 0, 0, 0 },
+                    .rotation = Placement.Rotation.left,
+                },
+                .{
+                    .position = .{ 0, 0, 0 },
+                    .rotation = Placement.Rotation.back,
+                },
+                .{
+                    .position = .{ 0, 0, 0 },
+                    .rotation = Placement.Rotation.right,
                 },
             }),
             .tetra => misc.sliceFromArray([_]Placement{
