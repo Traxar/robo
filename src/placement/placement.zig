@@ -26,6 +26,28 @@ pub fn PlacementType(T: type) type {
             };
         }
 
+        ///```
+        ///  a   b
+        ///*-->*-->*
+        ///```
+        pub fn move(a: Placement, b: Position) Placement {
+            return .{
+                .position = a.position + a.rotation.apply(T, b),
+                .rotation = a.rotation,
+            };
+        }
+
+        ///```
+        ///  a   b
+        ///*-->*-->*
+        ///```
+        pub fn rotate(a: Placement, b: Rotation) Placement {
+            return .{
+                .position = a.position,
+                .rotation = b.rotate(a.rotation),
+            };
+        }
+
         pub fn inv(a: Placement) Placement {
             const s = a.rotation.inv();
             return .{

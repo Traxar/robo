@@ -62,22 +62,13 @@ pub fn main() !void {
             }
         }
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_MIDDLE)) {
-            placement_modifier = placement_modifier.place(.{
-                .position = @splat(0),
-                .rotation = Placement.Rotation.mirror,
-            });
+            placement_modifier = placement_modifier.rotate(Placement.Rotation.mirror);
         }
         if (c.GetMouseWheelMove() > 0) {
-            placement_modifier = placement_modifier.place(.{
-                .position = @splat(0),
-                .rotation = Placement.Rotation.z270,
-            });
+            placement_modifier = placement_modifier.rotate(Placement.Rotation.z270);
         }
         if (c.GetMouseWheelMove() < 0) {
-            placement_modifier = placement_modifier.place(.{
-                .position = @splat(0),
-                .rotation = Placement.Rotation.z90,
-            });
+            placement_modifier = placement_modifier.rotate(Placement.Rotation.z90);
         }
         if (c.IsKeyDown('Z')) {
             c.DrawText(c.GetKeyName('Z'), 100, 100, 10, c.BLACK);
