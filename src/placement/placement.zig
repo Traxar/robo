@@ -117,8 +117,8 @@ pub fn PlacementType(T: type) type {
             return c.RayCollision{
                 .hit = true,
                 .distance = t,
-                .normal = misc.Vector3Rotate(misc.vec(0, 0, -1), matrix),
-                .point = c.Vector3Transform(misc.vec(x - 0.5, y - 0.5, -0.5), matrix),
+                .normal = misc.Vector3Rotate(misc.toVec3(.{ 0, 0, -1 }), matrix),
+                .point = c.Vector3Transform(misc.toVec3(.{ x - 0.5, y - 0.5, -0.5 }), matrix),
             };
         }
     };

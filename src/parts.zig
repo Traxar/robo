@@ -25,12 +25,13 @@ pub const Part = enum {
     }
 
     pub fn render(part: Part, placement: Placement, color: c.Color, preview: bool) void {
+        const offset = misc.toVec3(.{ 0, 0, 0 });
         const i: usize = @intFromEnum(part);
         assets[i].transform = placement.mat();
         if (preview)
-            c.DrawModel(assets[i], misc.vec(0, 0, 0), 1, c.ColorAlpha(color, 0.2))
+            c.DrawModel(assets[i], offset, 1, c.ColorAlpha(color, 0.2))
         else
-            c.DrawModel(assets[i], misc.vec(0, 0, 0), 1, color);
+            c.DrawModel(assets[i], offset, 1, color);
     }
 
     pub inline fn connections(part: Part) []const Placement {

@@ -1,13 +1,25 @@
 const c = @import("c.zig");
 
-pub fn vec(x: f32, y: f32, z: f32) c.Vector3 {
-    return .{ .x = x, .y = y, .z = z };
+pub fn toVec3(v: @Vector(3, f32)) c.Vector3 {
+    return .{ .x = v[0], .y = v[1], .z = v[2] };
 }
 
-pub fn Vector3Rotate(vec3: c.Vector3, mat: c.Matrix) c.Vector3 {
-    const x = vec3.x;
-    const y = vec3.y;
-    const z = vec3.z;
+pub fn toVec2(v: @Vector(2, f32)) c.Vector2 {
+    return .{ .x = v[0], .y = v[1] };
+}
+
+pub fn fromVec3(v: c.Vector3) @Vector(3, f32) {
+    return .{ v.x, v.y, v.z };
+}
+
+pub fn fromVec2(v: c.Vector2) @Vector(2, f32) {
+    return .{ v.x, v.y };
+}
+
+pub fn Vector3Rotate(v: c.Vector3, mat: c.Matrix) c.Vector3 {
+    const x = v.x;
+    const y = v.y;
+    const z = v.z;
     return .{
         .x = (((mat.m0 * x) + (mat.m4 * y)) + (mat.m8 * z)),
         .y = (((mat.m1 * x) + (mat.m5 * y)) + (mat.m9 * z)),
