@@ -124,5 +124,5 @@ fn updateCamera() void {
     var rotation = misc.fromVec2(c.GetMouseDelta());
     rotation *= @splat(sensitivity * frame_time);
 
-    camera.update(movement, rotation);
+    camera.update(movement, rotation, .{});
 }
