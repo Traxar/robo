@@ -2,16 +2,17 @@ const std = @import("std");
 const c = @import("c.zig");
 const misc = @import("misc.zig");
 const vec = misc.vec;
-const Parts = @import("parts.zig");
+const parts = @import("parts.zig");
 const Placement = @import("placement.zig").Placement;
 const Robot = @import("robot.zig").Robot;
 const Camera = @import("camera.zig").Camera;
+const Options = @import("options.zig").Options;
 
 var camera: Camera = undefined;
-var fovy: f32 = 45;
+var options: Options = .{};
 var gpa = std.heap.DebugAllocator(.{}){};
 var allocator = gpa.allocator();
-var selected_part = Parts.Part.cube;
+var selected_part = parts.Part.cube;
 var robot: Robot = undefined;
 var preview: ?Placement = null;
 var placement_modifier = Placement{
@@ -19,7 +20,7 @@ var placement_modifier = Placement{
     .rotation = Placement.Rotation.up,
 };
 var color = c.BEIGE;
-var part = Parts.Part.cube;
+var part = parts.Part.cube;
 
 pub fn main() !void {
     try init();
@@ -35,7 +36,7 @@ pub fn main() !void {
                 c.DisableCursor();
         }
         if (c.IsKeyPressed(c.KEY_Q)) {
-            part = @enumFromInt(@mod(@intFromEnum(part) +% 1, @typeInfo(Parts.Part).@"enum".fields.len));
+            part = @enumFromInt(@mod(@intFromEnum(part) +% 1, @typeInfo(parts.Part).@"enum".fields.len));
         }
         if (c.IsCursorHidden()) {
             updateCamera();
@@ -43,9 +44,9 @@ pub fn main() !void {
 
         const ray: c.Ray =
             if (c.IsCursorHidden())
-                misc.CameraRay(camera.raylib(fovy))
+                misc.CameraRay(camera.raylib(options.camera))
             else
-                c.GetScreenToWorldRay(c.GetMousePosition(), camera.raylib(fovy));
+                c.GetScreenToWorldRay(c.GetMousePosition(), camera.raylib(options.camera));
         const ray_result = robot.rayCollision(ray);
         const part_index = ray_result.part_index;
         preview = ray_result.connection;
@@ -93,7 +94,7 @@ fn init() !void {
     c.SetTargetFPS(60);
     camera = .{ .position = .{ 10, 10, 10 } };
     camera.target(.{ 0, 0, 0 });
-    Parts.loadAssets();
+    parts.loadAssets();
     robot = try Robot.init(allocator, 2000);
 }
 
@@ -101,7 +102,7 @@ fn render() void {
     c.BeginDrawing();
     defer c.EndDrawing();
     c.ClearBackground(c.RAYWHITE);
-    c.BeginMode3D(camera.raylib(fovy));
+    c.BeginMode3D(camera.raylib(options.camera));
     defer c.EndMode3D();
     robot.render();
     if (preview) |p| part.render(p, c.BLACK, true);

@@ -8,12 +8,13 @@ pub const Camera = struct {
     position: Vec3,
     rotation: Vec2 = undefined, // yaw, pitch
 
-    pub const UpdateOptions = struct {
+    pub const Options = struct {
+        fovy: f32 = 45,
         forward_relative_to_camera: bool = true,
         up_relative_to_camera: bool = true,
     };
 
-    pub fn update(camera: *Camera, movement: Vec3, rotation: Vec2, options: UpdateOptions) void {
+    pub fn update(camera: *Camera, movement: Vec3, rotation: Vec2, options: Options) void {
         camera.rotation += rotation;
         camera.fixRotation();
         const sin = @sin(camera.rotation);
@@ -71,7 +72,7 @@ pub const Camera = struct {
             .{ 0, 0, 1 };
     }
 
-    pub fn raylib(camera: Camera, fovy: f32) c.Camera3D {
+    pub fn raylib(camera: Camera, options: Options) c.Camera3D {
         const sin = @sin(camera.rotation);
         const cos = @cos(camera.rotation);
         const trg = camera.position + forward(sin, cos, true);
@@ -87,7 +88,7 @@ pub const Camera = struct {
                 .z = trg[2],
             },
             .up = .{ .x = 0, .y = 0, .z = 1 },
-            .fovy = fovy,
+            .fovy = options.fovy,
             .projection = c.CAMERA_PERSPECTIVE,
         };
     }
