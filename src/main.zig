@@ -64,7 +64,11 @@ pub fn main() !void {
             }
         }
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_MIDDLE)) {
-            placement_modifier = placement_modifier.rotate(Placement.Rotation.mirror);
+            if (part_index) |index| {
+                const target = robot.at(index);
+                part = target.part;
+                color = target.color;
+            }
         }
         if (c.GetMouseWheelMove() > 0) {
             placement_modifier = placement_modifier.rotate(Placement.Rotation.z270);

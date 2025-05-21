@@ -8,11 +8,12 @@ const Ray = c.Ray;
 const RayCollision = c.RayCollision;
 
 pub const Robot = struct {
-    const Parts = std.MultiArrayList(struct {
+    const PartInstance = struct {
         part: Part,
         placement: Placement,
         color: Color,
-    });
+    };
+    const Parts = std.MultiArrayList(PartInstance);
     parts: Parts,
     gpa: Allocator,
 
@@ -46,6 +47,10 @@ pub const Robot = struct {
 
     pub fn remove(robot: *Robot, part_index: usize) void {
         robot.parts.swapRemove(part_index);
+    }
+
+    pub fn at(robot: *Robot, part_index: usize) PartInstance {
+        return robot.parts.get(part_index);
     }
 
     pub fn rayCollision(robot: Robot, ray: Ray) struct { part_index: ?usize, connection: ?Placement } {
