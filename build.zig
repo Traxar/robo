@@ -33,6 +33,12 @@ pub fn build(b: *std.Build) void {
     const raylib = raylib_dep.artifact("raylib");
     exe_mod.linkLibrary(raylib);
 
+    const raygui_dep = b.dependency("raygui", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe_mod.addIncludePath(raygui_dep.path("src"));
+
     // This creates another `std.Build.Step.Compile`, but this one builds an executable
     // rather than a static library.
     const exe = b.addExecutable(.{
