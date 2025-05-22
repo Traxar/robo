@@ -91,7 +91,9 @@ pub fn main() !void {
 fn init() !void {
     c.InitWindow(1280, 720, "hello world");
     //c.DisableCursor();
-    c.SetTargetFPS(60);
+    const monitor_id = c.GetCurrentMonitor();
+    const monitor_refresh_rate = c.GetMonitorRefreshRate(monitor_id);
+    c.SetTargetFPS(monitor_refresh_rate);
     camera = .{ .position = .{ 10, 10, 10 } };
     camera.target(.{ 0, 0, 0 });
     parts.loadAssets();
