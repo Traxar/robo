@@ -99,7 +99,7 @@ pub fn PlacementType(T: type) type {
             const miss = c.RayCollision{};
             const eps = 1e-8;
             const inv_matrix = placement.inv().mat();
-            const dir = misc.Vector3Rotate(ray.direction, inv_matrix);
+            const dir = c.Vector3Rotate(ray.direction, inv_matrix);
             if (dir.z <= eps) return miss; //ray looks in wrong direction
             const pos = c.Vector3Transform(ray.position, inv_matrix);
             if (pos.z >= -0.5) return miss; //ray starts at wrong side
@@ -117,8 +117,8 @@ pub fn PlacementType(T: type) type {
             return c.RayCollision{
                 .hit = true,
                 .distance = t,
-                .normal = misc.Vector3Rotate(misc.toVec3(.{ 0, 0, -1 }), matrix),
-                .point = c.Vector3Transform(misc.toVec3(.{ x - 0.5, y - 0.5, -0.5 }), matrix),
+                .normal = c.Vector3Rotate(c.toVec3(.{ 0, 0, -1 }), matrix),
+                .point = c.Vector3Transform(c.toVec3(.{ x - 0.5, y - 0.5, -0.5 }), matrix),
             };
         }
     };

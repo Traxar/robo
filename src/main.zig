@@ -44,7 +44,7 @@ pub fn main() !void {
 
         const ray: c.Ray =
             if (c.IsCursorHidden())
-                misc.CameraRay(camera.raylib(options.camera))
+                c.CameraRay(camera.raylib(options.camera))
             else
                 c.GetScreenToWorldRay(c.GetMousePosition(), camera.raylib(options.camera));
         const ray_result = robot.rayCollision(ray);
@@ -128,7 +128,7 @@ fn updateCamera() void {
     if (c.IsKeyDown(c.KEY_SPACE)) movement += .{ 0, 0, 1 };
     if (c.IsKeyDown(c.KEY_LEFT_CONTROL)) movement += .{ 0, 0, -1 };
     movement *= @splat(speed * frame_time);
-    var rotation = misc.fromVec2(c.GetMouseDelta());
+    var rotation = c.fromVec2(c.GetMouseDelta());
     rotation *= @splat(sensitivity * frame_time);
 
     camera.update(movement, rotation, .{});

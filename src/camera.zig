@@ -4,7 +4,6 @@ const c = @import("c.zig");
 pub const Camera = struct {
     const Vec3 = @Vector(3, f32);
     const Vec2 = @Vector(2, f32);
-    const eps = 1e-3;
     position: Vec3,
     rotation: Vec2 = undefined, // yaw, pitch
 
@@ -35,7 +34,7 @@ pub const Camera = struct {
 
     fn fixRotation(camera: *Camera) void {
         camera.rotation[0] = @mod(camera.rotation[0], 2 * math.pi);
-        camera.rotation[1] = @max(-math.pi / 2.0 + eps, @min(math.pi / 2.0 - eps, camera.rotation[1]));
+        camera.rotation[1] = @max(-math.pi / 2.0, @min(math.pi / 2.0, camera.rotation[1]));
     }
 
     fn forward(sin: Vec2, cos: Vec2, relative_to_camera: bool) Vec3 {
@@ -75,19 +74,10 @@ pub const Camera = struct {
     pub fn raylib(camera: Camera, options: Options) c.Camera3D {
         const sin = @sin(camera.rotation);
         const cos = @cos(camera.rotation);
-        const trg = camera.position + forward(sin, cos, true);
         return c.Camera3D{
-            .position = .{
-                .x = camera.position[0],
-                .y = camera.position[1],
-                .z = camera.position[2],
-            },
-            .target = .{
-                .x = trg[0],
-                .y = trg[1],
-                .z = trg[2],
-            },
-            .up = .{ .x = 0, .y = 0, .z = 1 },
+            .position = c.toVec3(camera.position),
+            .target = c.toVec3(camera.position + forward(sin, cos, true)),
+            .up = c.toVec3(up(sin, cos, true)),
             .fovy = options.fovy,
             .projection = c.CAMERA_PERSPECTIVE,
         };

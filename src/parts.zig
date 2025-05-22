@@ -25,7 +25,7 @@ pub const Part = enum {
     }
 
     pub fn render(part: Part, placement: Placement, color: c.Color, preview: bool) void {
-        const offset = misc.toVec3(.{ 0, 0, 0 });
+        const offset = c.toVec3(.{ 0, 0, 0 });
         const i: usize = @intFromEnum(part);
         assets[i].transform = placement.mat();
         if (preview)
