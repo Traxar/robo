@@ -71,7 +71,7 @@ pub fn main() !void {
                 color = target.color;
             }
         }
-        if (c.GetMouseWheelMove() > 0) {
+        if (c.GetMouseWheelMove() > 0 or c.IsKeyPressed(c.KEY_R)) {
             placement_modifier = placement_modifier.rotate(Placement.Rotation.z270);
         }
         if (c.GetMouseWheelMove() < 0) {
