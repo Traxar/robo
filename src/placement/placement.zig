@@ -151,7 +151,7 @@ test "Placement" {
         .position = .{ -33, 8, 21 },
         .rotation = .{ .shuffle = .zxy, .flip = .pnn },
     };
-    const d_ = c.inv();
+    const d_ = c_.inv();
     try expect(@reduce(.And, d.position == d_.position));
     try expect(d.rotation == d_.rotation);
 }
