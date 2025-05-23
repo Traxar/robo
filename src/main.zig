@@ -4,7 +4,7 @@ const misc = @import("misc.zig");
 const vec = misc.vec;
 const parts = @import("parts.zig");
 const Placement = @import("placement.zig").Placement;
-const Robot = @import("robot.zig").Robot;
+const Robot = @import("robot.zig").RobotType(true);
 const Camera = @import("camera.zig").Camera;
 const Options = @import("options.zig").Options;
 
@@ -15,12 +15,13 @@ var allocator = gpa.allocator();
 var selected_part = parts.Part.cube;
 var robot: Robot = undefined;
 var preview: ?Placement = null;
+var preview_old: ?Placement = null;
+var preview_collides: bool = false;
 var placement_modifier = Placement{
     .position = .{ 0, 0, -1 },
     .rotation = Placement.Rotation.up,
 };
 var color = c.BEIGE;
-var part = parts.Part.cube;
 
 pub fn main() !void {
     try init();
@@ -36,7 +37,7 @@ pub fn main() !void {
                 c.DisableCursor();
         }
         if (c.IsKeyPressed(c.KEY_Q)) {
-            part = @enumFromInt(@mod(@intFromEnum(part) +% 1, @typeInfo(parts.Part).@"enum".fields.len));
+            selected_part = @enumFromInt(@mod(@intFromEnum(selected_part) +% 1, @typeInfo(parts.Part).@"enum".fields.len));
         }
         if (c.IsCursorHidden()) {
             updateCamera();
@@ -54,10 +55,15 @@ pub fn main() !void {
             preview = connection.place(placement_modifier)
                 .place(selected_part.connections()[0].inv());
         }
+        if (preview != preview_old) {
+            preview_old = preview;
+            preview_collides = robot.buildCollision(selected_part, preview);
+        }
 
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_LEFT)) {
             if (preview) |p|
-                try robot.add(p, part, color);
+                if (!preview_collides)
+                    try robot.add(p, selected_part, color);
         }
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_RIGHT)) {
             if (part_index) |index| {
@@ -67,7 +73,7 @@ pub fn main() !void {
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_MIDDLE)) {
             if (part_index) |index| {
                 const target = robot.at(index);
-                part = target.part;
+                selected_part = target.part;
                 color = target.color;
             }
         }
@@ -107,7 +113,7 @@ fn render() void {
     c.BeginMode3D(camera.raylib(options.camera));
     defer c.EndMode3D();
     robot.render();
-    if (preview) |p| part.render(p, c.BLACK, true);
+    if (preview) |p| selected_part.render(p, c.BLACK, true);
 }
 
 fn deinit() void {
