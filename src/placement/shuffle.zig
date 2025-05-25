@@ -19,6 +19,13 @@ pub const Shuffle = enum(u3) {
         };
     }
 
+    pub fn mirrored(a: Shuffle) bool {
+        return switch (a) {
+            .xyz, .yzx, .zxy => false,
+            .xzy, .yxz, .zyx => true,
+        };
+    }
+
     pub fn apply(a: Shuffle, T: type, v: @Vector(3, T)) @Vector(3, T) {
         return switch (a) {
             inline else => |a_| @shuffle(T, v, undefined, mask(a_)),

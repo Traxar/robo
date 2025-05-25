@@ -24,6 +24,10 @@ pub const Rotation = packed struct {
     pub const left = y90;
     pub const back = x270;
 
+    pub fn mirrored(a: Rotation) bool {
+        return a.flip.mirrored() != a.shuffle.mirrored();
+    }
+
     ///`shuffle` then `flip`
     pub fn apply(a: Rotation, T: type, v: @Vector(3, T)) @Vector(3, T) {
         return a.flip.apply(T, a.shuffle.apply(T, v));

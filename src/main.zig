@@ -47,6 +47,15 @@ pub fn main() !void {
         if (c.IsKeyPressed(c.KEY_C)) {
             selected_color = @enumFromInt(@mod(@intFromEnum(selected_color) +% 1, @typeInfo(Color).@"enum".fields.len));
         }
+        if (c.IsKeyPressed(c.KEY_X)) {
+            placement_modifier = placement_modifier.rotate(Placement.Rotation.mirror);
+        }
+        if (c.GetMouseWheelMove() > 0 or c.IsKeyPressed(c.KEY_R)) {
+            placement_modifier = placement_modifier.rotate(Placement.Rotation.z270);
+        }
+        if (c.GetMouseWheelMove() < 0) {
+            placement_modifier = placement_modifier.rotate(Placement.Rotation.z90);
+        }
         if (c.IsCursorHidden()) {
             updateCamera();
         }
@@ -83,12 +92,6 @@ pub fn main() !void {
                 selected_part = target.part;
                 selected_color = target.color;
             }
-        }
-        if (c.GetMouseWheelMove() > 0 or c.IsKeyPressed(c.KEY_R)) {
-            placement_modifier = placement_modifier.rotate(Placement.Rotation.z270);
-        }
-        if (c.GetMouseWheelMove() < 0) {
-            placement_modifier = placement_modifier.rotate(Placement.Rotation.z90);
         }
 
         c.DrawFPS(10, 10);

@@ -24,6 +24,12 @@ pub const Flip = enum(u3) {
         };
     }
 
+    pub fn mirrored(a: Flip) bool {
+        return switch (a) {
+            inline else => |a_| @reduce(.Mul, a_.mask(i8)) == -1,
+        };
+    }
+
     pub fn apply(a: Flip, T: type, v: @Vector(3, T)) @Vector(3, T) {
         return v * a.mask(T);
     }
