@@ -3,18 +3,23 @@ const Allocator = std.mem.Allocator;
 const Part = @import("parts.zig").Part;
 const Placement = @import("placement.zig").Placement;
 const c = @import("c.zig");
-const Color = c.Color;
+const Color = @import("color.zig").Color;
 const Ray = c.Ray;
 const RayCollision = c.RayCollision;
 
-pub fn RobotType(build_collisions: bool) type {
+pub const Options = struct {
+    mark_collisions: bool = false,
+};
+
+/// for edit mode
+pub fn Type(options: Options) type {
     return struct {
         const Robot = @This();
         const PartInstance = struct {
             part: Part,
             placement: Placement,
             color: Color,
-            collides: if (build_collisions) bool else void = if (build_collisions) false else {},
+            collides: if (options.mark_collisions) bool else void = if (options.mark_collisions) false else {},
         };
         const Parts = std.MultiArrayList(PartInstance);
         parts: Parts,
@@ -36,7 +41,7 @@ pub fn RobotType(build_collisions: bool) type {
         pub fn render(robot: Robot) void {
             for (0..robot.parts.len) |i| {
                 const part = robot.parts.get(i);
-                const color = if (!build_collisions or !part.collides) part.color else c.RED;
+                const color = if (!options.mark_collisions or !part.collides) part.color.raylib() else c.MAROON;
                 part.part.render(part.placement, color, false);
             }
         }
@@ -104,7 +109,7 @@ pub fn RobotType(build_collisions: bool) type {
 
         pub fn buildCollision(robot: *Robot, new_part: Part, new_placement: ?Placement) bool {
             var collides = false;
-            if (build_collisions) @memset(robot.parts.items(.collides), false);
+            if (options.mark_collisions) @memset(robot.parts.items(.collides), false);
             if (new_placement == null) return false;
             for (0..robot.parts.len) |i| {
                 const old_part = robot.parts.get(i);
@@ -117,7 +122,7 @@ pub fn RobotType(build_collisions: bool) type {
                         const z_axis_matches = diff.rotation.shuffle.mask()[2] == 2;
                         const z_dir_matches = diff.rotation.flip.mask(i8)[2] == 1;
                         if (position_matches and z_axis_matches and z_dir_matches) {
-                            if (build_collisions) {
+                            if (options.mark_collisions) {
                                 collides = true;
                                 robot.parts.items(.collides)[i] = true;
                             } else {

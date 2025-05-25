@@ -4,9 +4,12 @@ const misc = @import("misc.zig");
 const vec = misc.vec;
 const parts = @import("parts.zig");
 const Placement = @import("placement.zig").Placement;
-const Robot = @import("robot.zig").RobotType(true);
+const Robot = @import("robot.zig").Type(.{
+    .mark_collisions = true,
+});
 const Camera = @import("camera.zig").Camera;
 const Options = @import("options.zig").Options;
+const Color = @import("color.zig").Color;
 
 var camera: Camera = undefined;
 var options: Options = .{};
@@ -21,7 +24,7 @@ var placement_modifier = Placement{
     .position = .{ 0, 0, -1 },
     .rotation = Placement.Rotation.up,
 };
-var color = c.BEIGE;
+var selected_color = Color.beige;
 
 pub fn main() !void {
     try init();
@@ -38,6 +41,9 @@ pub fn main() !void {
         }
         if (c.IsKeyPressed(c.KEY_Q)) {
             selected_part = @enumFromInt(@mod(@intFromEnum(selected_part) +% 1, @typeInfo(parts.Part).@"enum".fields.len));
+        }
+        if (c.IsKeyPressed(c.KEY_C)) {
+            selected_color = @enumFromInt(@mod(@intFromEnum(selected_color) +% 1, @typeInfo(Color).@"enum".fields.len));
         }
         if (c.IsCursorHidden()) {
             updateCamera();
@@ -63,7 +69,7 @@ pub fn main() !void {
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_LEFT)) {
             if (preview) |p|
                 if (!preview_collides)
-                    try robot.add(p, selected_part, color);
+                    try robot.add(p, selected_part, selected_color);
         }
         if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_RIGHT)) {
             if (part_index) |index| {
@@ -74,7 +80,7 @@ pub fn main() !void {
             if (part_index) |index| {
                 const target = robot.at(index);
                 selected_part = target.part;
-                color = target.color;
+                selected_color = target.color;
             }
         }
         if (c.GetMouseWheelMove() > 0 or c.IsKeyPressed(c.KEY_R)) {
