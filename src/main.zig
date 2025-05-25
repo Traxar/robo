@@ -18,7 +18,6 @@ var allocator = gpa.allocator();
 var selected_part = parts.Part.cube;
 var robot: Robot = undefined;
 var preview: ?Placement = null;
-var preview_old: ?Placement = null;
 var preview_collides: bool = false;
 var placement_modifier = Placement{
     .position = .{ 0, 0, -1 },
@@ -32,6 +31,9 @@ pub fn main() !void {
 
     //main loop
     while (!c.WindowShouldClose()) {
+        const preview_old = preview;
+        const selected_part_old = selected_part;
+
         //update
         if (c.IsKeyPressed(c.KEY_TAB)) {
             if (c.IsCursorHidden())
@@ -61,8 +63,7 @@ pub fn main() !void {
             preview = connection.place(placement_modifier)
                 .place(selected_part.connections()[0].inv());
         }
-        if (preview != preview_old) {
-            preview_old = preview;
+        if (preview != preview_old or selected_part != selected_part_old) {
             preview_collides = robot.buildCollision(selected_part, preview);
         }
 
