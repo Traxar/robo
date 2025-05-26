@@ -1,5 +1,5 @@
 const c = @import("c.zig");
-const Bind = @import("bind.zig");
+const Bind = @import("bind.zig").Bind;
 const Camera = @import("camera.zig").Camera;
 const Robot = @import("robot.zig").Type(.{
     .mark_collisions = true,
