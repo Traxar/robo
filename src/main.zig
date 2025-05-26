@@ -16,6 +16,11 @@ var options: Options = .{};
 var gpa = std.heap.DebugAllocator(.{}){};
 var allocator = gpa.allocator();
 
+const Mode = enum {
+    edit,
+};
+
+var mode: Mode = .edit;
 var editor: Editor = undefined;
 
 pub fn main() !void {
@@ -24,8 +29,12 @@ pub fn main() !void {
 
     //main loop
     while (!c.WindowShouldClose()) {
-        try editor.update(options.editor);
-        render();
+        switch (mode) {
+            .edit => {
+                try editor.update(options.editor);
+                render();
+            },
+        }
     }
 }
 
