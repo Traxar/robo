@@ -36,6 +36,7 @@ fn init() !void {
     const monitor_id = c.GetCurrentMonitor();
     const monitor_refresh_rate = c.GetMonitorRefreshRate(monitor_id);
     c.SetTargetFPS(monitor_refresh_rate);
+
     parts.loadAssets();
 
     editor = .{
