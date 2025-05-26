@@ -28,7 +28,9 @@ pub const Part = enum {
         const offset = c.toVec3(.{ 0, 0, 0 });
         const i: usize = @intFromEnum(part);
         assets[i].transform = placement.mat();
-        c.rlSetCullFace(if (placement.rotation.mirrored()) c.RL_CULL_FACE_FRONT else c.RL_CULL_FACE_BACK);
+        const mirrored = placement.rotation.mirrored();
+        if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_FRONT);
+        defer if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_BACK);
         if (preview)
             c.DrawModel(assets[i], offset, 1, c.ColorAlpha(color, 0.2))
         else
