@@ -10,20 +10,13 @@ const Robot = @import("robot.zig").Type(.{
 const Camera = @import("camera.zig").Camera;
 const Options = @import("options.zig").Options;
 const Color = @import("color.zig").Color;
+const Editor = @import("editor.zig").Editor;
 
-var camera: Camera = undefined;
 var options: Options = .{};
 var gpa = std.heap.DebugAllocator(.{}){};
 var allocator = gpa.allocator();
-var selected_part = parts.Part.cube;
-var robot: Robot = undefined;
-var preview: ?Placement = null;
-var preview_collides: bool = false;
-var placement_modifier = Placement{
-    .position = .{ 0, 0, -1 },
-    .rotation = Placement.Rotation.up,
-};
-var selected_color = Color.beige;
+
+var editor: Editor = undefined;
 
 pub fn main() !void {
     try init();
@@ -31,118 +24,38 @@ pub fn main() !void {
 
     //main loop
     while (!c.WindowShouldClose()) {
-        const preview_old = preview;
-        const selected_part_old = selected_part;
-
-        //update
-        if (c.IsKeyPressed(c.KEY_TAB)) {
-            if (c.IsCursorHidden())
-                c.EnableCursor()
-            else
-                c.DisableCursor();
-        }
-        if (c.IsKeyPressed(c.KEY_Q)) {
-            selected_part = @enumFromInt(@mod(@intFromEnum(selected_part) +% 1, @typeInfo(parts.Part).@"enum".fields.len));
-        }
-        if (c.IsKeyPressed(c.KEY_C)) {
-            selected_color = @enumFromInt(@mod(@intFromEnum(selected_color) +% 1, @typeInfo(Color).@"enum".fields.len));
-        }
-        if (c.IsKeyPressed(c.KEY_X)) {
-            placement_modifier = placement_modifier.rotate(Placement.Rotation.mirror);
-        }
-        if (c.GetMouseWheelMove() > 0 or c.IsKeyPressed(c.KEY_R)) {
-            placement_modifier = placement_modifier.rotate(Placement.Rotation.z270);
-        }
-        if (c.GetMouseWheelMove() < 0) {
-            placement_modifier = placement_modifier.rotate(Placement.Rotation.z90);
-        }
-        if (c.IsCursorHidden()) {
-            updateCamera();
-        }
-
-        const ray: c.Ray =
-            if (c.IsCursorHidden())
-                c.CameraRay(camera.raylib(options.camera))
-            else
-                c.GetScreenToWorldRay(c.GetMousePosition(), camera.raylib(options.camera));
-        const ray_result = robot.rayCollision(ray);
-        const part_index = ray_result.part_index;
-        preview = ray_result.connection;
-        if (preview) |connection| {
-            preview = connection.place(placement_modifier)
-                .place(selected_part.connections()[0].inv());
-        }
-        if (preview != preview_old or selected_part != selected_part_old) {
-            preview_collides = robot.buildCollision(selected_part, preview);
-        }
-
-        if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_LEFT)) {
-            if (preview) |p|
-                if (!preview_collides)
-                    try robot.add(p, selected_part, selected_color);
-        }
-        if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_RIGHT)) {
-            if (part_index) |index| {
-                robot.remove(index);
-            }
-        }
-        if (c.IsMouseButtonPressed(c.MOUSE_BUTTON_MIDDLE)) {
-            if (part_index) |index| {
-                const target = robot.at(index);
-                selected_part = target.part;
-                selected_color = target.color;
-            }
-        }
-
-        c.DrawFPS(10, 10);
-
-        //render
+        try editor.update(options.editor);
         render();
     }
 }
 
 fn init() !void {
     c.InitWindow(1280, 720, "hello world");
+    c.SetExitKey(c.KEY_NULL);
     //c.DisableCursor();
     const monitor_id = c.GetCurrentMonitor();
     const monitor_refresh_rate = c.GetMonitorRefreshRate(monitor_id);
     c.SetTargetFPS(monitor_refresh_rate);
-    camera = .{ .position = .{ 10, 10, 10 } };
-    camera.target(.{ 0, 0, 0 });
     parts.loadAssets();
-    robot = try Robot.init(allocator, 2000);
+
+    editor = .{
+        .camera = .{ .position = .{ 10, 10, 10 } },
+        .robot = try Robot.init(allocator, 2000),
+    };
+    editor.camera.target(.{ 0, 0, 0 });
 }
 
 fn render() void {
     c.BeginDrawing();
     defer c.EndDrawing();
     c.ClearBackground(c.RAYWHITE);
-    c.BeginMode3D(camera.raylib(options.camera));
-    defer c.EndMode3D();
-    robot.render();
-    if (preview) |p| selected_part.render(p, c.BLACK, true);
+
+    c.DrawFPS(10, 10);
+    editor.render(options.editor);
 }
 
 fn deinit() void {
-    robot.deinit();
+    editor.robot.deinit();
     if (gpa.deinit() == .leak) @panic("TEST FAIL");
     c.CloseWindow();
-}
-
-fn updateCamera() void {
-    const speed = 5.4;
-    const sensitivity = -0.1;
-    const frame_time = c.GetFrameTime();
-    var movement: @Vector(3, f32) = @splat(0);
-    if (c.IsKeyDown(c.KEY_W)) movement += .{ 0, 1, 0 };
-    if (c.IsKeyDown(c.KEY_A)) movement += .{ -1, 0, 0 };
-    if (c.IsKeyDown(c.KEY_S)) movement += .{ 0, -1, 0 };
-    if (c.IsKeyDown(c.KEY_D)) movement += .{ 1, 0, 0 };
-    if (c.IsKeyDown(c.KEY_SPACE)) movement += .{ 0, 0, 1 };
-    if (c.IsKeyDown(c.KEY_LEFT_CONTROL)) movement += .{ 0, 0, -1 };
-    movement *= @splat(speed * frame_time);
-    var rotation = c.fromVec2(c.GetMouseDelta());
-    rotation *= @splat(sensitivity * frame_time);
-
-    camera.update(movement, rotation, .{});
 }

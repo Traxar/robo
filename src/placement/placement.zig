@@ -10,9 +10,14 @@ pub fn PlacementType(T: type) type {
         position: Position, //x,y,z
         rotation: Rotation, //shuffle and flip
 
-        pub const zero: Placement = .{
+        pub const zero = Placement{
             .position = @splat(0),
             .rotation = Rotation.none,
+        };
+
+        pub const connection = Placement{
+            .position = .{ 0, 0, -1 },
+            .rotation = Placement.Rotation.up,
         };
 
         ///```

@@ -65,10 +65,7 @@ pub fn Type(options: Options) type {
         pub fn rayCollision(robot: Robot, ray: Ray) struct { part_index: ?usize, connection: ?Placement } {
             if (robot.parts.len == 0) return .{
                 .part_index = null,
-                .connection = .{
-                    .position = .{ 0, 0, -1 },
-                    .rotation = Placement.Rotation.up,
-                },
+                .connection = Placement.connection,
             };
             const eps = 1e-5;
             var closest_mesh_distance = std.math.floatMax(f32);
