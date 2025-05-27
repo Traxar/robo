@@ -1,19 +1,19 @@
 const std = @import("std");
 const c = @import("c.zig");
 const parts = @import("parts.zig");
+const Bind = @import("bind.zig").Bind;
 const Options = @import("options.zig").Options;
 const Editor = @import("editor.zig").Editor;
+const Mode = @import("mode.zig").Mode;
+const Menu = @import("menu.zig").Menu;
 
-var options: Options = .{};
 var gpa = std.heap.DebugAllocator(.{}){};
 var allocator = gpa.allocator();
 
-const Mode = enum {
-    edit,
-};
-
+var options: Options = .{};
 var mode: Mode = .edit;
 var editor: Editor = undefined;
+var menu: Menu = .{};
 
 pub fn main() !void {
     try init();
@@ -21,12 +21,20 @@ pub fn main() !void {
 
     //main loop
     while (!c.WindowShouldClose()) {
-        switch (mode) {
-            .edit => {
-                try editor.update(options.editor);
-                render();
-            },
+        if (Bind.esc.pressed()) {
+            menu.enabled = !menu.enabled;
         }
+        if (!menu.enabled) {
+            switch (mode) {
+                .close => {
+                    break;
+                },
+                .edit => {
+                    try editor.update(options.editor);
+                },
+            }
+        }
+        render();
     }
 }
 
@@ -56,11 +64,14 @@ fn render() void {
     defer c.EndDrawing();
     c.ClearBackground(c.RAYWHITE);
 
-    c.DrawFPS(10, 10);
-
     switch (mode) {
+        .close => {},
         .edit => {
             editor.render(options.editor);
         },
     }
+
+    c.DrawFPS(10, 10);
+
+    menu.show(&options, &mode);
 }

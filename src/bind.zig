@@ -3,6 +3,8 @@ pub const Bind = struct {
     key: c_int = c.KEY_NULL, //c.KEY_...
     mouse: ?c_int = null, //c.MOUSE_BUTTON_... scrolling has to be hardcoded for now
 
+    pub const esc = Bind{ .key = c.KEY_ESCAPE };
+
     pub fn pressed(bind: Bind) bool {
         return c.IsKeyPressed(bind.key) or (bind.mouse != null and c.IsMouseButtonPressed(bind.mouse.?));
     }
