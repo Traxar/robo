@@ -39,7 +39,7 @@ pub const Part = enum {
         if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_FRONT);
         defer if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_BACK);
         if (preview)
-            c.DrawModel(assets[i], offset, 1, c.ColorAlpha(color, 0.25))
+            c.DrawModel(assets[i], offset, 1.001, c.ColorAlpha(color, 0.25))
         else
             c.DrawModel(assets[i], offset, 1, color);
     }
