@@ -1,41 +1,16 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 const c = @import("c.zig");
 const parts = @import("parts.zig");
-const Bind = @import("bind.zig").Bind;
-const Options = @import("options.zig").Options;
-const Editor = @import("editor.zig").Editor;
-const Mode = @import("mode.zig").Mode;
-const Menu = @import("menu.zig").Menu;
+const State = @import("state.zig").State;
 
 var gpa = std.heap.DebugAllocator(.{}){};
-var allocator = gpa.allocator();
-
-var options: Options = .{};
-var mode: Mode = .edit;
-var editor: Editor = undefined;
-var menu: Menu = .{};
+var state: State = undefined;
 
 pub fn main() !void {
     try init();
     defer deinit();
-
-    //main loop
-    while (!c.WindowShouldClose()) {
-        if (Bind.esc.pressed()) {
-            menu.enabled = !menu.enabled;
-        }
-        if (!menu.enabled) {
-            switch (mode) {
-                .close => {
-                    break;
-                },
-                .edit => {
-                    try editor.update(options.editor);
-                },
-            }
-        }
-        render();
-    }
+    while (try state.run()) {}
 }
 
 fn init() !void {
@@ -48,30 +23,11 @@ fn init() !void {
 
     parts.loadAssets();
 
-    editor = try Editor.init(allocator, 2000);
-    editor.camera = .{ .position = .{ 10, 10, 10 } };
-    editor.camera.target(.{ 0, 0, 0 });
+    state = try State.init(gpa.allocator());
 }
 
 fn deinit() void {
-    editor.deinit();
+    state.deinit();
     if (gpa.deinit() == .leak) @panic("TEST FAIL");
     c.CloseWindow();
-}
-
-fn render() void {
-    c.BeginDrawing();
-    defer c.EndDrawing();
-    c.ClearBackground(c.RAYWHITE);
-
-    switch (mode) {
-        .close => {},
-        .edit => {
-            editor.render(options.editor);
-        },
-    }
-
-    c.DrawFPS(10, 10);
-
-    menu.show(&options, &mode);
 }

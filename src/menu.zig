@@ -1,6 +1,6 @@
 const c = @import("c.zig");
 const Options = @import("options.zig").Options;
-const Mode = @import("mode.zig").Mode;
+const State = @import("state.zig").State;
 
 const Page = enum {
     main,
@@ -11,17 +11,16 @@ pub const Menu = struct {
     enabled: bool = false,
     page: Page = .main,
 
-    pub fn show(menu: *Menu, options: *Options, mode: *Mode) void {
-        if (!menu.enabled) return;
+    pub fn show(state: *State) void {
+        if (!state.menu.enabled) return;
         if (c.IsCursorHidden()) c.EnableCursor();
-        switch (menu.page) {
-            .main => menu.main(options, mode),
-            .settings => menu.settings(options, mode),
+        switch (state.menu.page) {
+            .main => main(state),
+            .settings => settings(state),
         }
     }
 
-    fn main(menu: *Menu, options: *Options, mode: *Mode) void {
-        _ = options;
+    fn main(state: *State) void {
         const w: f32 = @floatFromInt(c.GetRenderWidth());
         const h: f32 = @floatFromInt(c.GetRenderHeight());
 
@@ -31,7 +30,7 @@ pub const Menu = struct {
             .x = 0.4 * w,
             .y = 0.4 * h,
         }, "Continue") == 1) {
-            menu.enabled = false;
+            state.menu.enabled = false;
         }
 
         if (c.GuiButton(.{
@@ -40,7 +39,7 @@ pub const Menu = struct {
             .x = 0.4 * w,
             .y = 0.46 * h,
         }, "Settings") == 1) {
-            menu.page = .settings;
+            state.menu.page = .settings;
         }
 
         if (c.GuiButton(.{
@@ -49,14 +48,12 @@ pub const Menu = struct {
             .x = 0.4 * w,
             .y = 0.52 * h,
         }, "Quit") == 1) {
-            mode.* = .close;
-            menu.enabled = false;
+            state.mode = .close;
+            state.menu.enabled = false;
         }
     }
 
-    fn settings(menu: *Menu, options: *Options, mode: *Mode) void {
-        _ = options;
-        _ = mode;
+    fn settings(state: *State) void {
         const w: f32 = @floatFromInt(c.GetRenderWidth());
         const h: f32 = @floatFromInt(c.GetRenderHeight());
 
@@ -73,7 +70,7 @@ pub const Menu = struct {
             .x = 0.4 * w,
             .y = 0.52 * h,
         }, "Back") == 1) {
-            menu.page = .main;
+            state.menu.page = .main;
         }
     }
 };
