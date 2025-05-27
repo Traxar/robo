@@ -1,4 +1,5 @@
 const c = @import("c.zig");
+const Allocator = @import("std").mem.Allocator;
 const Bind = @import("bind.zig").Bind;
 const Camera = @import("camera.zig").Camera;
 const Robot = @import("robot.zig").Type(.{
@@ -12,6 +13,7 @@ pub const Editor = struct {
     camera: Camera,
     robot: Robot,
     preview: Preview = .{},
+    gpa: Allocator,
 
     const Preview = struct {
         rotation: Placement = Placement.connection,
@@ -51,6 +53,19 @@ pub const Editor = struct {
         };
     };
 
+    ///undefined camera
+    pub fn init(gpa: Allocator, initial_capacity: usize) !Editor {
+        return .{
+            .camera = undefined,
+            .robot = try Robot.init(gpa, initial_capacity),
+            .gpa = gpa,
+        };
+    }
+
+    pub fn deinit(editor: *Editor) void {
+        editor.robot.deinit(editor.gpa);
+    }
+
     pub fn update(editor: *Editor, options: Options) !void {
         if (options.binds.toggle_cursor.pressed()) {
             if (c.IsCursorHidden())
@@ -68,7 +83,7 @@ pub const Editor = struct {
         if (options.binds.place.pressed()) {
             if (editor.preview.placement) |placement|
                 if (!editor.preview.collides)
-                    try editor.robot.add(placement, editor.preview.part, editor.preview.color);
+                    try editor.robot.add(editor.gpa, placement, editor.preview.part, editor.preview.color);
         }
         if (options.binds.remove.pressed()) {
             if (editor.preview.target) |index| {

@@ -1,15 +1,7 @@
 const std = @import("std");
 const c = @import("c.zig");
-const misc = @import("misc.zig");
-const vec = misc.vec;
 const parts = @import("parts.zig");
-const Placement = @import("placement.zig").Placement;
-const Robot = @import("robot.zig").Type(.{
-    .mark_collisions = true,
-});
-const Camera = @import("camera.zig").Camera;
 const Options = @import("options.zig").Options;
-const Color = @import("color.zig").Color;
 const Editor = @import("editor.zig").Editor;
 
 var options: Options = .{};
@@ -48,11 +40,15 @@ fn init() !void {
 
     parts.loadAssets();
 
-    editor = .{
-        .camera = .{ .position = .{ 10, 10, 10 } },
-        .robot = try Robot.init(allocator, 2000),
-    };
+    editor = try Editor.init(allocator, 2000);
+    editor.camera = .{ .position = .{ 10, 10, 10 } };
     editor.camera.target(.{ 0, 0, 0 });
+}
+
+fn deinit() void {
+    editor.deinit();
+    if (gpa.deinit() == .leak) @panic("TEST FAIL");
+    c.CloseWindow();
 }
 
 fn render() void {
@@ -61,11 +57,10 @@ fn render() void {
     c.ClearBackground(c.RAYWHITE);
 
     c.DrawFPS(10, 10);
-    editor.render(options.editor);
-}
 
-fn deinit() void {
-    editor.robot.deinit();
-    if (gpa.deinit() == .leak) @panic("TEST FAIL");
-    c.CloseWindow();
+    switch (mode) {
+        .edit => {
+            editor.render(options.editor);
+        },
+    }
 }

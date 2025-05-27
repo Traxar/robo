@@ -23,19 +23,17 @@ pub fn Type(options: Options) type {
         };
         const Parts = std.MultiArrayList(PartInstance);
         parts: Parts,
-        gpa: Allocator,
 
         pub fn init(gpa: Allocator, inital_capacity: usize) !Robot {
             var parts = Parts{};
             try parts.ensureTotalCapacity(gpa, inital_capacity);
             return .{
                 .parts = parts,
-                .gpa = gpa,
             };
         }
 
-        pub fn deinit(robot: *Robot) void {
-            robot.parts.deinit(robot.gpa);
+        pub fn deinit(robot: *Robot, gpa: Allocator) void {
+            robot.parts.deinit(gpa);
         }
 
         pub fn render(robot: Robot) void {
@@ -46,8 +44,8 @@ pub fn Type(options: Options) type {
             }
         }
 
-        pub fn add(robot: *Robot, placement: Placement, part: Part, color: Color) !void {
-            try robot.parts.append(robot.gpa, .{
+        pub fn add(robot: *Robot, gpa: Allocator, placement: Placement, part: Part, color: Color) !void {
+            try robot.parts.append(gpa, .{
                 .part = part,
                 .placement = placement,
                 .color = color,
