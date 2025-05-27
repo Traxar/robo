@@ -13,6 +13,7 @@ pub const Editor = struct {
     camera: Camera,
     robot: Robot,
     preview: Preview = .{},
+    cursor: bool = true,
     gpa: Allocator,
 
     const Preview = struct {
@@ -68,13 +69,15 @@ pub const Editor = struct {
 
     pub fn update(editor: *Editor, options: Options) !void {
         if (options.binds.toggle_cursor.pressed()) {
-            if (c.IsCursorHidden())
-                c.EnableCursor()
-            else
-                c.DisableCursor();
+            editor.cursor = !editor.cursor;
+        }
+        if (editor.cursor and c.IsCursorHidden()) {
+            c.EnableCursor();
+        } else if (!editor.cursor and !c.IsCursorHidden()) {
+            c.DisableCursor();
         }
 
-        if (c.IsCursorHidden()) {
+        if (!editor.cursor) {
             editor.updateCamera(options);
         }
 
@@ -135,10 +138,10 @@ pub const Editor = struct {
         }
 
         const ray: c.Ray =
-            if (c.IsCursorHidden())
-                c.CameraRay(editor.camera.raylib(options.camera))
+            if (editor.cursor)
+                c.GetScreenToWorldRay(c.GetMousePosition(), editor.camera.raylib(options.camera))
             else
-                c.GetScreenToWorldRay(c.GetMousePosition(), editor.camera.raylib(options.camera));
+                c.CameraRay(editor.camera.raylib(options.camera));
         const ray_result = editor.robot.rayCollision(ray);
         editor.preview.target = ray_result.part_index;
         if (ray_result.connection) |connection| {
