@@ -13,6 +13,7 @@ pub const Editor = struct {
     camera: Camera,
     robot: Robot,
     preview: Preview = .{},
+    blueprint: ?Part = null,
     cursor: bool = true,
     gpa: Allocator,
 
@@ -20,8 +21,8 @@ pub const Editor = struct {
         rotation: Placement = Placement.connection,
         placement: ?Placement = null,
         target: ?usize = null,
-        part: Part = Part.cube,
-        color: Color = Color.beige,
+        part: Part = .cube,
+        color: Color = .white,
         collides: bool = false,
 
         fn evalNeeded(new: Preview, old: Preview) bool {
@@ -160,6 +161,7 @@ pub const Editor = struct {
         c.BeginMode3D(editor.camera.raylib(options.camera));
         defer c.EndMode3D();
         editor.robot.render();
-        if (editor.preview.placement) |placement| editor.preview.part.render(placement, c.BLACK, true);
+        if (editor.preview.placement) |placement| editor.preview.part.render(placement, editor.preview.color.raylib(), true);
+        if (editor.blueprint) |part| part.blueprint();
     }
 };
