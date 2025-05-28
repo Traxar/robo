@@ -56,8 +56,41 @@ pub fn Type(options: Options) type {
             robot.parts.swapRemove(part_index);
         }
 
-        pub fn at(robot: *Robot, part_index: usize) PartInstance {
+        pub fn at(robot: Robot, part_index: usize) PartInstance {
             return robot.parts.get(part_index);
+        }
+
+        const SaveFormat = struct {
+            parts: []Part,
+            placements: []Placement,
+            colors: []Color,
+        };
+
+        pub fn save(robot: Robot) !void {
+            var save_format: SaveFormat = undefined;
+            const enum_literals = .{ .part, .placement, .color };
+            const slice_names = .{ "parts", "placements", "colors" };
+            inline for (enum_literals, slice_names) |e, s| {
+                @field(save_format, s) = robot.parts.items(e);
+            }
+            var file = try std.fs.cwd().createFile("ro.bot", .{});
+            defer file.close();
+            try std.zon.stringify.serialize(save_format, .{}, file.writer());
+        }
+
+        pub fn load(gpa: Allocator) !Robot {
+            const source = try std.fs.cwd().readFileAllocOptions(gpa, "ro.bot", 1_000_000, null, 1, 0);
+            defer gpa.free(source);
+            const save_format = try std.zon.parse.fromSlice(SaveFormat, gpa, source, null, .{});
+            var robot = try Robot.init(gpa, save_format.parts.len);
+            robot.parts.len = save_format.parts.len;
+            const enum_literals = .{ .part, .placement, .color };
+            const slice_names = .{ "parts", "placements", "colors" };
+            inline for (enum_literals, slice_names) |e, s| {
+                @memcpy(robot.parts.items(e), @field(save_format, s));
+                gpa.free(@field(save_format, s));
+            }
+            return robot;
         }
 
         pub fn rayCollision(robot: Robot, ray: Ray) struct { part_index: ?usize, connection: ?Placement } {

@@ -59,12 +59,13 @@ pub const Editor = struct {
     pub fn init(gpa: Allocator, initial_capacity: usize) !Editor {
         return .{
             .camera = undefined,
-            .robot = try Robot.init(gpa, initial_capacity),
+            .robot = Robot.load(gpa) catch try Robot.init(gpa, initial_capacity),
             .gpa = gpa,
         };
     }
 
     pub fn deinit(editor: *Editor) void {
+        editor.robot.save() catch {};
         editor.robot.deinit(editor.gpa);
     }
 
