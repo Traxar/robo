@@ -32,7 +32,7 @@ pub const Editor = struct {
 
     pub const Options = struct {
         speed: f32 = 5.4,
-        sensitivity: f32 = -0.1,
+        sensitivity: f32 = -0.0015,
         camera: Camera.Options = .{},
         binds: Binds = .{},
 
@@ -115,7 +115,7 @@ pub const Editor = struct {
         if (options.binds.down.down()) movement += .{ 0, 0, -1 };
         movement *= @splat(options.speed * frame_time);
         var rotation = c.fromVec2(c.GetMouseDelta());
-        rotation *= @splat(options.sensitivity * frame_time);
+        rotation *= @splat(options.sensitivity);
         editor.camera.update(movement, rotation, .{});
     }
 
