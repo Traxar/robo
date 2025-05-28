@@ -11,6 +11,7 @@ pub fn loadAssets() void {
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
         assets[i] = c.LoadModel(field.name ++ ".glb");
     }
+    _ = c.ChangeDirectory(application_directory);
 }
 
 pub const Part = enum {
