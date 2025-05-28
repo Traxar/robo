@@ -33,11 +33,22 @@ pub const Menu = struct {
             state.menu.enabled = false;
         }
 
+        if (state.mode != .edit) c.GuiDisable();
         if (c.GuiButton(.{
             .width = 0.2 * w,
             .height = 0.05 * h,
             .x = 0.4 * w,
             .y = 0.46 * h,
+        }, "Save") == 1) {
+            state.editor.robot.save() catch {};
+        }
+        if (state.mode != .edit) c.GuiEnable();
+
+        if (c.GuiButton(.{
+            .width = 0.2 * w,
+            .height = 0.05 * h,
+            .x = 0.4 * w,
+            .y = 0.52 * h,
         }, "Settings") == 1) {
             state.menu.page = .settings;
         }
@@ -46,7 +57,7 @@ pub const Menu = struct {
             .width = 0.2 * w,
             .height = 0.05 * h,
             .x = 0.4 * w,
-            .y = 0.52 * h,
+            .y = 0.58 * h,
         }, "Quit") == 1) {
             state.mode = .close;
             state.menu.enabled = false;
