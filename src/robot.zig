@@ -39,7 +39,7 @@ pub fn Type(options: Options) type {
         pub fn render(robot: Robot) void {
             for (0..robot.parts.len) |i| {
                 const part = robot.parts.get(i);
-                const color = if (!options.mark_collisions or !part.collides) part.color.raylib() else c.MAROON;
+                const color = if (!options.mark_collisions or !part.collides) part.color.raylib() else Color.collision;
                 part.part.render(part.placement, color, false);
             }
         }

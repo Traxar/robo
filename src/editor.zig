@@ -163,19 +163,27 @@ pub const Editor = struct {
             c.BeginMode3D(editor.camera.raylib(options.camera));
             defer c.EndMode3D();
             editor.robot.render();
-            if (editor.preview.placement) |placement| editor.preview.part.render(placement, editor.preview.color.raylib(), true);
+            if (editor.preview.placement) |placement|
+                editor.preview.part.render(
+                    placement,
+                    if (editor.preview.collides)
+                        Color.collision
+                    else
+                        editor.preview.color.raylib(),
+                    true,
+                );
             if (editor.blueprint) |part| part.blueprint();
         }
         //overlay
-        if (!editor.cursor) crosshair();
+        if (!editor.cursor) editor.crosshair();
     }
 
-    fn crosshair() void {
+    fn crosshair(editor: Editor) void {
         const V = @Vector(2, f32);
         const size_h = V{ 11, 1 };
         const size_v = @shuffle(f32, size_h, undefined, @Vector(2, i32){ 1, 0 });
         const border = 1;
-        const color = c.BLACK;
+        const color = if (editor.preview.collides) Color.collision else c.BLACK;
         const border_color = c.WHITE;
         const center = V{ @floatFromInt(c.GetRenderWidth()), @floatFromInt(c.GetRenderHeight()) } * @as(V, @splat(0.5));
         const size_border_h = size_h + @as(V, @splat(border * 2));

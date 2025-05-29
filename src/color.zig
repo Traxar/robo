@@ -16,6 +16,8 @@ pub const Color = enum {
     gray,
     lightgray,
 
+    pub const collision = c.MAROON;
+
     pub fn raylib(color: Color) c.Color {
         return switch (color) {
             .white => c.RAYWHITE,
