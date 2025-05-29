@@ -159,10 +159,31 @@ pub const Editor = struct {
     }
 
     pub fn render(editor: Editor, options: Options) void {
-        c.BeginMode3D(editor.camera.raylib(options.camera));
-        defer c.EndMode3D();
-        editor.robot.render();
-        if (editor.preview.placement) |placement| editor.preview.part.render(placement, editor.preview.color.raylib(), true);
-        if (editor.blueprint) |part| part.blueprint();
+        {
+            c.BeginMode3D(editor.camera.raylib(options.camera));
+            defer c.EndMode3D();
+            editor.robot.render();
+            if (editor.preview.placement) |placement| editor.preview.part.render(placement, editor.preview.color.raylib(), true);
+            if (editor.blueprint) |part| part.blueprint();
+        }
+        //overlay
+        if (!editor.cursor) crosshair();
+    }
+
+    fn crosshair() void {
+        const V = @Vector(2, f32);
+        const size_h = V{ 11, 1 };
+        const size_v = @shuffle(f32, size_h, undefined, @Vector(2, i32){ 1, 0 });
+        const border = 1;
+        const color = c.BLACK;
+        const border_color = c.WHITE;
+        const center = V{ @floatFromInt(c.GetRenderWidth()), @floatFromInt(c.GetRenderHeight()) } * @as(V, @splat(0.5));
+        const size_border_h = size_h + @as(V, @splat(border * 2));
+        const size_border_v = size_v + @as(V, @splat(border * 2));
+
+        c.DrawRectangleV(c.toVec2(center - size_border_h * @as(V, @splat(0.5))), c.toVec2(size_border_h), border_color);
+        c.DrawRectangleV(c.toVec2(center - size_border_v * @as(V, @splat(0.5))), c.toVec2(size_border_v), border_color);
+        c.DrawRectangleV(c.toVec2(center - size_h * @as(V, @splat(0.5))), c.toVec2(size_h), color);
+        c.DrawRectangleV(c.toVec2(center - size_v * @as(V, @splat(0.5))), c.toVec2(size_v), color);
     }
 };
