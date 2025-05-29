@@ -26,14 +26,14 @@ pub const Part = enum {
     }
 
     pub fn blueprint(part: Part) void {
-        const offset = c.toVec3(@splat(0));
+        const offset = c.toVector3(@splat(0));
         const i: usize = @intFromEnum(part);
         assets[i].transform = Placement.zero.mat();
         c.DrawModel(assets[i], offset, 3.001, c.ColorAlpha(c.SKYBLUE, 0.25));
     }
 
     pub fn render(part: Part, placement: Placement, color: c.Color, preview: bool) void {
-        const offset = c.toVec3(@splat(0));
+        const offset = c.toVector3(@splat(0));
         const i: usize = @intFromEnum(part);
         assets[i].transform = placement.mat();
         const mirrored = placement.rotation.mirrored();

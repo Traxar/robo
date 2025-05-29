@@ -75,9 +75,9 @@ pub const Camera = struct {
         const sin = @sin(camera.rotation);
         const cos = @cos(camera.rotation);
         return c.Camera3D{
-            .position = c.toVec3(camera.position),
-            .target = c.toVec3(camera.position + forward(sin, cos, true)),
-            .up = c.toVec3(up(sin, cos, true)),
+            .position = c.toVector3(camera.position),
+            .target = c.toVector3(camera.position + forward(sin, cos, true)),
+            .up = c.toVector3(up(sin, cos, true)),
             .fovy = options.fovy,
             .projection = c.CAMERA_PERSPECTIVE,
         };

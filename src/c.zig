@@ -8,19 +8,19 @@ pub usingnamespace @cImport({
 
 const c = @This();
 
-pub fn toVec3(v: @Vector(3, f32)) c.Vector3 {
+pub fn toVector3(v: @Vector(3, f32)) c.Vector3 {
     return .{ .x = v[0], .y = v[1], .z = v[2] };
 }
 
-pub fn toVec2(v: @Vector(2, f32)) c.Vector2 {
+pub fn toVector2(v: @Vector(2, f32)) c.Vector2 {
     return .{ .x = v[0], .y = v[1] };
 }
 
-pub fn fromVec3(v: c.Vector3) @Vector(3, f32) {
+pub fn fromVector3(v: c.Vector3) @Vector(3, f32) {
     return .{ v.x, v.y, v.z };
 }
 
-pub fn fromVec2(v: c.Vector2) @Vector(2, f32) {
+pub fn fromVector2(v: c.Vector2) @Vector(2, f32) {
     return .{ v.x, v.y };
 }
 

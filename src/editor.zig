@@ -114,7 +114,7 @@ pub const Editor = struct {
         if (options.binds.up.down()) movement += .{ 0, 0, 1 };
         if (options.binds.down.down()) movement += .{ 0, 0, -1 };
         movement *= @splat(options.speed * frame_time);
-        var rotation = c.fromVec2(c.GetMouseDelta());
+        var rotation = c.fromVector2(c.GetMouseDelta());
         rotation *= @splat(options.sensitivity);
         editor.camera.update(movement, rotation, .{});
     }
@@ -189,9 +189,25 @@ pub const Editor = struct {
         const size_border_h = size_h + @as(V, @splat(border * 2));
         const size_border_v = size_v + @as(V, @splat(border * 2));
 
-        c.DrawRectangleV(c.toVec2(center - size_border_h * @as(V, @splat(0.5))), c.toVec2(size_border_h), border_color);
-        c.DrawRectangleV(c.toVec2(center - size_border_v * @as(V, @splat(0.5))), c.toVec2(size_border_v), border_color);
-        c.DrawRectangleV(c.toVec2(center - size_h * @as(V, @splat(0.5))), c.toVec2(size_h), color);
-        c.DrawRectangleV(c.toVec2(center - size_v * @as(V, @splat(0.5))), c.toVec2(size_v), color);
+        c.DrawRectangleV(
+            c.toVector2(center - size_border_h * @as(V, @splat(0.5))),
+            c.toVector2(size_border_h),
+            border_color,
+        );
+        c.DrawRectangleV(
+            c.toVector2(center - size_border_v * @as(V, @splat(0.5))),
+            c.toVector2(size_border_v),
+            border_color,
+        );
+        c.DrawRectangleV(
+            c.toVector2(center - size_h * @as(V, @splat(0.5))),
+            c.toVector2(size_h),
+            color,
+        );
+        c.DrawRectangleV(
+            c.toVector2(center - size_v * @as(V, @splat(0.5))),
+            c.toVector2(size_v),
+            color,
+        );
     }
 };
