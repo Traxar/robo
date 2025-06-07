@@ -7,6 +7,7 @@ pub fn PlacementType(T: type) type {
         const Placement = @This();
         pub const Position = @Vector(3, T);
         pub const Rotation = @import("rotation.zig").Rotation;
+        pub const BoundingBox = @import("boundingbox.zig").Type(T);
         position: Position, //x,y,z
         rotation: Rotation, //shuffle and flip
 
