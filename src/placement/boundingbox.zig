@@ -38,5 +38,17 @@ pub fn Type(T: type) type {
             c.add(b.move(a.max).position);
             return c;
         }
+
+        pub fn next(a: BoundingBox, b: *Position) bool {
+            inline for (0..3) |i| {
+                if (b[i] < a.max[i]) {
+                    b[i] += 1;
+                    return true;
+                } else {
+                    b[i] = a.min[i];
+                }
+            }
+            return false;
+        }
     };
 }
