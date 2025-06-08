@@ -54,6 +54,13 @@ pub fn PlacementType(T: type) type {
             };
         }
 
+        pub fn scale(a: Placement, b: T) Placement {
+            return .{
+                .position = a.position * @as(Position, @splat(b)),
+                .rotation = a.rotation,
+            };
+        }
+
         pub fn inv(a: Placement) Placement {
             const s = a.rotation.inv();
             return .{
