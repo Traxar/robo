@@ -159,7 +159,7 @@ pub const Editor = struct {
     }
 
     pub fn render(editor: Editor, options: Options) void {
-        {
+        { // 3d
             c.BeginMode3D(editor.camera.raylib(options.camera));
             defer c.EndMode3D();
             editor.robot.render();

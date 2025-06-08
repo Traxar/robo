@@ -15,7 +15,7 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    c.InitWindow(1280, 720, "hello world");
+    c.InitWindow(1280, 720, "robo");
     c.SetExitKey(c.KEY_NULL);
     //c.DisableCursor();
     const monitor_id = c.GetCurrentMonitor();
