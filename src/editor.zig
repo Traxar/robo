@@ -59,7 +59,7 @@ pub const Editor = struct {
     pub fn init(gpa: Allocator, initial_capacity: usize) !Editor {
         return .{
             .camera = undefined,
-            .robot = Robot.load(gpa) catch try Robot.init(gpa, initial_capacity),
+            .robot = Robot.load("ro.bot", gpa) catch try Robot.init(gpa, initial_capacity),
             .gpa = gpa,
         };
     }

@@ -5,6 +5,7 @@ const parts = @import("parts.zig");
 const State = @import("state.zig").State;
 
 var gpa = std.heap.DebugAllocator(.{}){};
+const allocator = gpa.allocator();
 var state: State = undefined;
 
 pub fn main() !void {
@@ -21,13 +22,14 @@ fn init() !void {
     const monitor_refresh_rate = c.GetMonitorRefreshRate(monitor_id);
     c.SetTargetFPS(monitor_refresh_rate);
 
-    parts.loadAssets();
+    try parts.loadAssets(allocator);
 
-    state = try State.init(gpa.allocator());
+    state = try State.init(allocator);
 }
 
 fn deinit() void {
     state.deinit();
+    parts.unloadAssets(allocator);
     if (gpa.deinit() == .leak) @panic("TEST FAIL");
     c.CloseWindow();
 }

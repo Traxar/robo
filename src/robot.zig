@@ -78,8 +78,8 @@ pub fn Type(options: Options) type {
             try std.zon.stringify.serialize(save_format, .{}, file.writer());
         }
 
-        pub fn load(gpa: Allocator) !Robot {
-            const source = try std.fs.cwd().readFileAllocOptions(gpa, "ro.bot", 1_000_000, null, 1, 0);
+        pub fn load(path: []const u8, gpa: Allocator) !Robot {
+            const source = try std.fs.cwd().readFileAllocOptions(gpa, path, 1_000_000, null, 1, 0);
             defer gpa.free(source);
             const save_format = try std.zon.parse.fromSlice(SaveFormat, gpa, source, null, .{});
             var robot = try Robot.init(gpa, save_format.parts.len);
@@ -135,14 +135,16 @@ pub fn Type(options: Options) type {
             };
         }
 
-        pub fn buildCollision(robot: *Robot, new_part: Part, new_placement: ?Placement) bool {
+        pub fn buildCollision(robot: *Robot, new_part: Part, new_placement_: ?Placement) bool {
             var collides = false;
             if (options.mark_collisions) @memset(robot.parts.items(.collides), false);
-            if (new_placement == null) return false;
+            if (new_placement_ == null) return false;
+            const new_placement = new_placement_.?;
             for (0..robot.parts.len) |i| {
                 const old_part = robot.parts.get(i);
+                //connections:
                 for (new_part.connections()) |new_connection| {
-                    const new_connection_placement_inv = new_placement.?.place(new_connection).inv();
+                    const new_connection_placement_inv = new_placement.place(new_connection).inv();
                     for (old_part.part.connections()) |old_connection| {
                         const old_connection_placement = old_part.placement.place(old_connection);
                         const diff = new_connection_placement_inv.place(old_connection_placement);
@@ -157,6 +159,16 @@ pub fn Type(options: Options) type {
                                 return true;
                             }
                         }
+                    }
+                }
+                //buildboxes:
+                const newToOld = new_placement.inv().place(old_part.placement);
+                if (new_part.buildBox().collides(newToOld.scale(3), old_part.part.buildBox())) {
+                    if (options.mark_collisions) {
+                        collides = true;
+                        robot.parts.items(.collides)[i] = true;
+                    } else {
+                        return true;
                     }
                 }
             }
