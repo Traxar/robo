@@ -163,7 +163,7 @@ pub fn Type(options: Options) type {
                 }
                 //buildboxes:
                 const newToOld = new_placement.inv().place(old_part.placement);
-                if (new_part.buildBox().collides(newToOld.scale(3), old_part.part.buildBox())) {
+                if (new_part.buildBox().collides(newToOld, old_part.part.buildBox())) {
                     if (options.mark_collisions) {
                         collides = true;
                         robot.parts.items(.collides)[i] = true;

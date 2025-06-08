@@ -11,6 +11,7 @@ const Robot = @import("robot.zig").Type(.{
 pub const BuildBox = struct {
     const I = u32;
     const Index = @Vector(3, I);
+    pub const scale = 3;
 
     bounds: BoundingBox,
     increment: Index,
@@ -58,7 +59,8 @@ pub const BuildBox = struct {
 
     /// a   p   b
     /// *------>*
-    pub fn collides(a: BuildBox, p: Placement, b: BuildBox) bool {
+    pub fn collides(a: BuildBox, _p: Placement, b: BuildBox) bool {
+        const p = _p.scale(scale);
         const q = p.inv();
         if (a.bounds.intersect(b.bounds.place(p))) |itersection| {
             var iter = itersection.min;
