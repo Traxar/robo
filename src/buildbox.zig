@@ -29,7 +29,7 @@ pub const BuildBox = struct {
             assert(part == .cube); //only cubes allowed
             box.bounds.add(placement.position);
         }
-        const size = @max(0, box.bounds.max + @as(Position, @splat(1)) - box.bounds.min);
+        const size: Index = @intCast(box.bounds.max + @as(Position, @splat(1)) - box.bounds.min);
         for (1..3) |i| {
             box.increment[i] = box.increment[i - 1] * size[i - 1];
         }
@@ -58,7 +58,7 @@ pub const BuildBox = struct {
 
     /// a   p   b
     /// *------>*
-    pub fn collide(a: BuildBox, p: Placement, b: BuildBox) bool {
+    pub fn collides(a: BuildBox, p: Placement, b: BuildBox) bool {
         const q = p.inv();
         if (a.bounds.intersect(b.bounds.place(p))) |itersection| {
             var iter = itersection.min;

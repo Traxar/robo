@@ -25,7 +25,7 @@ pub fn Type(T: type) type {
         }
 
         pub fn intersect(a: BoundingBox, b: BoundingBox) ?BoundingBox {
-            const c = .{
+            const c = BoundingBox{
                 .min = @max(a.min, b.min),
                 .max = @min(a.max, b.max),
             };
@@ -34,8 +34,10 @@ pub fn Type(T: type) type {
 
         pub fn place(a: BoundingBox, b: Placement) BoundingBox {
             var c = BoundingBox.none;
-            c.add(b.move(a.min).position);
-            c.add(b.move(a.max).position);
+            if (!a.empty()) {
+                c.add(b.move(a.min).position);
+                c.add(b.move(a.max).position);
+            }
             return c;
         }
 
