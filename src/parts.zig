@@ -8,7 +8,7 @@ const BuildBox = @import("buildbox.zig").BuildBox;
 var assets: [@typeInfo(Part).@"enum".fields.len]c.Model = undefined;
 var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
 
-pub fn loadAssets(gpa: Allocator) !void {
+pub fn loadData(gpa: Allocator) !void {
     const application_directory = c.GetApplicationDirectory();
     _ = c.ChangeDirectory(application_directory);
     _ = c.ChangeDirectory("../../assets/");
@@ -21,7 +21,7 @@ pub fn loadAssets(gpa: Allocator) !void {
     _ = c.ChangeDirectory(application_directory);
 }
 
-pub fn unloadAssets(gpa: Allocator) void {
+pub fn unloadData(gpa: Allocator) void {
     inline for (@typeInfo(Part).@"enum".fields, 0..) |_, i| {
         c.UnloadModel(assets[i]);
         buildBoxes[i].deinit(gpa);

@@ -22,14 +22,14 @@ fn init() !void {
     const monitor_refresh_rate = c.GetMonitorRefreshRate(monitor_id);
     c.SetTargetFPS(monitor_refresh_rate);
 
-    try parts.loadAssets(allocator);
+    try parts.loadData(allocator);
 
     state = try State.init(allocator);
 }
 
 fn deinit() void {
     state.deinit();
-    parts.unloadAssets(allocator);
+    parts.unloadData(allocator);
     if (gpa.deinit() == .leak) @panic("TEST FAIL");
     c.CloseWindow();
 }
