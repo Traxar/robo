@@ -18,7 +18,6 @@ pub fn main() !void {
 fn init() !void {
     c.InitWindow(1280, 720, "robo");
     c.SetExitKey(c.KEY_NULL);
-    //c.DisableCursor();
     // framerate:
     const monitor_id = c.GetCurrentMonitor();
     const monitor_refresh_rate = c.GetMonitorRefreshRate(monitor_id);
