@@ -1,7 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const c = @import("c.zig");
-const misc = @import("misc.zig");
 const Placement = @import("placement.zig").Placement;
 const Robot = @import("robot.zig").Type(.{ .mark_collisions = false });
 const BuildBox = @import("buildbox.zig").BuildBox;
@@ -67,7 +66,7 @@ pub const Part = enum {
 
     pub inline fn connections(part: Part) []const Placement {
         return switch (part) {
-            .cube, .inner => misc.sliceFromArray([_]Placement{
+            .cube, .inner => &([_]Placement{
                 .{
                     .position = .{ 0, 0, 0 },
                     .rotation = Placement.Rotation.down,
@@ -93,7 +92,7 @@ pub const Part = enum {
                     .rotation = Placement.Rotation.up,
                 },
             }),
-            .prism => misc.sliceFromArray([_]Placement{
+            .prism => &([_]Placement{
                 .{
                     .position = .{ 0, 0, 0 },
                     .rotation = Placement.Rotation.down,
@@ -111,7 +110,7 @@ pub const Part = enum {
                     .rotation = Placement.Rotation.right,
                 },
             }),
-            .tetra => misc.sliceFromArray([_]Placement{
+            .tetra => &([_]Placement{
                 .{
                     .position = .{ 0, 0, 0 },
                     .rotation = Placement.Rotation.down,

@@ -1,5 +1,4 @@
 const expect = @import("std").testing.expect;
-const misc = @import("../misc.zig");
 const c = @import("../c.zig");
 
 pub fn PlacementType(T: type) type {
