@@ -1,7 +1,7 @@
 const expect = @import("std").testing.expect;
 const c = @import("../c.zig");
 
-pub fn PlacementType(T: type) type {
+pub fn Type(T: type) type {
     return packed struct {
         const Placement = @This();
         pub const Position = @Vector(3, T);
@@ -137,7 +137,7 @@ pub fn PlacementType(T: type) type {
 }
 
 test "Placement" {
-    const Placement = PlacementType(i8);
+    const Placement = Type(i8);
     //size
     try expect(@sizeOf(Placement) == 4);
 

@@ -1,9 +1,7 @@
-const PlacementType = @import("placement.zig").PlacementType;
-
 pub fn Type(T: type) type {
     return struct {
         const BoundingBox = @This();
-        const Placement = PlacementType(T);
+        const Placement = @import("placement.zig").Type(T);
         const Position = Placement.Position;
         min: Position,
         max: Position, //inclusive

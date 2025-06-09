@@ -38,6 +38,6 @@ fn init() !void {
 fn deinit() void {
     state.deinit();
     parts.unloadData(allocator);
-    if (gpa.deinit() == .leak) @panic("TEST FAIL");
+    if (gpa.deinit() == .leak) @panic("MEMORY LEAKED");
     c.CloseWindow();
 }
