@@ -18,9 +18,14 @@ fn init() !void {
     c.InitWindow(1280, 720, "robo");
     c.SetExitKey(c.KEY_NULL);
     //c.DisableCursor();
+    // framerate:
     const monitor_id = c.GetCurrentMonitor();
     const monitor_refresh_rate = c.GetMonitorRefreshRate(monitor_id);
     c.SetTargetFPS(monitor_refresh_rate);
+    // working directory
+    const application_directory = c.GetApplicationDirectory();
+    _ = c.ChangeDirectory(application_directory);
+    _ = c.ChangeDirectory("../../");
 
     try parts.loadData(allocator);
 

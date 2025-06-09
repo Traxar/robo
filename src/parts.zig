@@ -11,16 +11,14 @@ var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
 const anti_zfighting = 0.001;
 
 pub fn loadData(gpa: Allocator) !void {
-    const application_directory = c.GetApplicationDirectory();
-    _ = c.ChangeDirectory(application_directory);
-    _ = c.ChangeDirectory("../../assets/");
+    _ = c.ChangeDirectory("assets/");
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
         assets[i] = c.LoadModel("models/" ++ field.name ++ ".glb");
         var robot = Robot.load("buildboxes/" ++ field.name ++ ".bot", gpa) catch try Robot.init(gpa, 0);
         defer robot.deinit(gpa);
         buildBoxes[i] = try BuildBox.init(robot, gpa);
     }
-    _ = c.ChangeDirectory(application_directory);
+    _ = c.ChangeDirectory("../");
 }
 
 pub fn unloadData(gpa: Allocator) void {
