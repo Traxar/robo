@@ -4,6 +4,7 @@ const c = @import("c.zig");
 const Placement = @import("placement.zig").Placement;
 const Robot = @import("robot.zig").Type(.{ .mark_collisions = false });
 const BuildBox = @import("buildbox.zig").BuildBox;
+const misc = @import("misc.zig");
 
 var assets: [@typeInfo(Part).@"enum".fields.len]c.Model = undefined;
 var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
@@ -11,14 +12,20 @@ var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
 const anti_zfighting = 0.001;
 
 pub fn loadData(gpa: Allocator) !void {
-    _ = c.ChangeDirectory("assets/");
+    try misc.cwd("assets");
+    try misc.cwd("models");
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
-        assets[i] = c.LoadModel("models/" ++ field.name ++ ".glb");
-        var robot = Robot.load("buildboxes/" ++ field.name ++ ".bot", gpa) catch try Robot.init(gpa, 0);
+        assets[i] = c.LoadModel(field.name ++ ".glb");
+    }
+    try misc.cwd("..");
+    try misc.cwd("buildboxes");
+    inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
+        var robot = Robot.load(field.name ++ ".bot", gpa) catch try Robot.init(gpa, 0);
         defer robot.deinit(gpa);
         buildBoxes[i] = try BuildBox.init(robot, gpa);
     }
-    _ = c.ChangeDirectory("../");
+    try misc.cwd("..");
+    try misc.cwd("..");
 }
 
 pub fn unloadData(gpa: Allocator) void {

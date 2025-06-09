@@ -3,6 +3,7 @@ const Allocator = std.mem.Allocator;
 const c = @import("c.zig");
 const parts = @import("parts.zig");
 const State = @import("state.zig").State;
+const misc = @import("misc.zig");
 
 var gpa = std.heap.DebugAllocator(.{}){};
 const allocator = gpa.allocator();
@@ -23,9 +24,11 @@ fn init() !void {
     const monitor_refresh_rate = c.GetMonitorRefreshRate(monitor_id);
     c.SetTargetFPS(monitor_refresh_rate);
     // working directory
-    const application_directory = c.GetApplicationDirectory();
-    _ = c.ChangeDirectory(application_directory);
-    _ = c.ChangeDirectory("../../");
+    const dir_path = try std.fs.selfExeDirPathAlloc(allocator);
+    defer allocator.free(dir_path);
+    try misc.set_cwd(dir_path);
+    try misc.cwd("..");
+    try misc.cwd("..");
 
     try parts.loadData(allocator);
 
