@@ -8,6 +8,8 @@ const BuildBox = @import("buildbox.zig").BuildBox;
 var assets: [@typeInfo(Part).@"enum".fields.len]c.Model = undefined;
 var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
 
+const anti_zfighting = 0.001;
+
 pub fn loadData(gpa: Allocator) !void {
     const application_directory = c.GetApplicationDirectory();
     _ = c.ChangeDirectory(application_directory);
@@ -48,7 +50,7 @@ pub const Part = enum {
         const offset = c.toVector3(@splat(0));
         const i: usize = @intFromEnum(part);
         assets[i].transform = Placement.zero.mat();
-        c.DrawModel(assets[i], offset, BuildBox.scale + 0.001, c.ColorAlpha(c.SKYBLUE, 0.25));
+        c.DrawModel(assets[i], offset, BuildBox.scale + anti_zfighting, c.ColorAlpha(c.SKYBLUE, 0.25));
     }
 
     pub fn render(part: Part, placement: Placement, color: c.Color, preview: bool) void {
@@ -59,7 +61,7 @@ pub const Part = enum {
         if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_FRONT);
         defer if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_BACK);
         if (preview)
-            c.DrawModel(assets[i], offset, 1.001, c.ColorAlpha(color, 0.25))
+            c.DrawModel(assets[i], offset, 1 + anti_zfighting, c.ColorAlpha(color, 0.25))
         else
             c.DrawModel(assets[i], offset, 1, color);
     }
