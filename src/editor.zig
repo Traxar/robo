@@ -15,6 +15,7 @@ pub const Editor = struct {
     preview: Preview = .{},
     blueprint: ?Part = null,
     cursor: bool = true,
+    render_mode: Part.RenderOptions.Mode = .default,
     gpa: Allocator,
 
     const Preview = struct {
@@ -48,6 +49,7 @@ pub const Editor = struct {
             pick: Bind = .{ .mouse = c.MOUSE_BUTTON_MIDDLE },
             next_part: Bind = .{ .key = c.KEY_Q },
             next_color: Bind = .{ .key = c.KEY_C },
+            next_render_mode: Bind = .{ .key = c.KEY_B },
             rotate_ccw: Bind = .{ .key = c.KEY_R },
             rotate_cw: Bind = .{},
             mirror: Bind = .{ .key = c.KEY_X },
@@ -81,6 +83,10 @@ pub const Editor = struct {
 
         if (!editor.cursor) {
             editor.updateCamera(options);
+        }
+
+        if (options.binds.next_render_mode.pressed()) {
+            editor.render_mode = @enumFromInt(@mod(@intFromEnum(editor.render_mode) +% 1, @typeInfo(Part.RenderOptions.Mode).@"enum".fields.len));
         }
 
         editor.updatePreview(options);
@@ -162,7 +168,7 @@ pub const Editor = struct {
         { // 3d
             c.BeginMode3D(editor.camera.raylib(options.camera));
             defer c.EndMode3D();
-            editor.robot.render();
+            editor.robot.render(editor.render_mode);
             if (editor.preview.placement) |placement|
                 editor.preview.part.render(
                     placement,
@@ -170,7 +176,10 @@ pub const Editor = struct {
                         Color.collision
                     else
                         editor.preview.color.raylib(),
-                    true,
+                    .{
+                        .mode = editor.render_mode,
+                        .preview = true,
+                    },
                 );
             if (editor.blueprint) |part| part.blueprint();
         }

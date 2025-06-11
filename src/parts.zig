@@ -46,6 +46,11 @@ pub const Part = enum {
         return assets[i].meshes[0];
     }
 
+    fn model(part: Part) c.Model {
+        const i: usize = @intFromEnum(part);
+        return assets[i];
+    }
+
     pub fn buildBox(part: Part) BuildBox {
         const i: usize = @intFromEnum(part);
         return buildBoxes[i];
@@ -58,17 +63,40 @@ pub const Part = enum {
         c.DrawModel(assets[i], offset, BuildBox.scale + anti_zfighting, c.ColorAlpha(c.SKYBLUE, 0.25));
     }
 
-    pub fn render(part: Part, placement: Placement, color: c.Color, preview: bool) void {
+    pub const RenderOptions = struct {
+        pub const Mode = enum { default, buildbox };
+        preview: bool = false,
+        mode: Mode = .buildbox,
+    };
+
+    pub fn render(part: Part, placement: Placement, color: c.Color, options: RenderOptions) void {
         const offset = c.toVector3(@splat(0));
-        const i: usize = @intFromEnum(part);
-        assets[i].transform = placement.mat();
+        const color_ = if (options.preview) c.ColorAlpha(color, 0.25) else color;
+        const scale: f32 = if (options.preview) 1 + anti_zfighting else 1;
         const mirrored = placement.rotation.mirrored();
         if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_FRONT);
         defer if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_BACK);
-        if (preview)
-            c.DrawModel(assets[i], offset, 1 + anti_zfighting, c.ColorAlpha(color, 0.25))
-        else
-            c.DrawModel(assets[i], offset, 1, color);
+        switch (options.mode) {
+            .default => {
+                var model_ = part.model();
+                model_.transform = placement.mat();
+                c.DrawModel(model_, offset, scale, color_);
+            },
+            .buildbox => {
+                const a = 1.0 / @as(comptime_float, BuildBox.scale);
+                const bb = part.buildBox();
+                var iter = bb.bounds.min;
+                while (true) : (if (!bb.bounds.next(&iter)) break) {
+                    if (bb.at(iter)) {
+                        const P = @Vector(3, f32);
+                        const p: P = @floatFromInt(placement.scale(BuildBox.scale).move(iter).position);
+                        const v = c.toVector3(p / @as(P, @splat(BuildBox.scale)));
+                        c.DrawCube(v, a, a, a, color_);
+                        c.DrawCubeWires(v, a, a, a, c.BLACK);
+                    }
+                }
+            },
+        }
     }
 
     pub inline fn connections(part: Part) []const Placement {

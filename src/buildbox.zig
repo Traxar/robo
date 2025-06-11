@@ -53,7 +53,7 @@ pub const BuildBox = struct {
         return @reduce(.Add, a.increment * @as(Index, @intCast(b - a.bounds.min)));
     }
 
-    fn at(a: BuildBox, b: Position) bool {
+    pub fn at(a: BuildBox, b: Position) bool {
         return a.values[a.index(b)];
     }
 
