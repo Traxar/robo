@@ -39,6 +39,7 @@ pub const Part = enum {
     cube,
     inner,
     prism,
+    prism_concave,
     tetra,
 
     pub fn mesh(part: Part) c.Mesh {
@@ -102,7 +103,9 @@ pub const Part = enum {
 
     pub inline fn connections(part: Part) []const Placement {
         return switch (part) {
-            .cube, .inner => &([_]Placement{
+            .cube,
+            .inner,
+            => &([_]Placement{
                 .{
                     .position = .{ 0, 0, 0 },
                     .rotation = Placement.Rotation.down,
@@ -128,7 +131,9 @@ pub const Part = enum {
                     .rotation = Placement.Rotation.up,
                 },
             }),
-            .prism => &([_]Placement{
+            .prism,
+            .prism_concave,
+            => &([_]Placement{
                 .{
                     .position = .{ 0, 0, 0 },
                     .rotation = Placement.Rotation.down,
