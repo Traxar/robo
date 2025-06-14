@@ -15,7 +15,7 @@ pub fn loadData(gpa: Allocator) !void {
     try misc.cwd("assets");
     try misc.cwd("models");
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
-        assets[i] = c.LoadModel(field.name ++ ".glb");
+        assets[i] = c.LoadModel(field.name ++ ".obj");
     }
     try misc.cwd("..");
     try misc.cwd("buildboxes");
@@ -80,7 +80,8 @@ pub const Part = enum {
             .default => {
                 var model_ = part.model();
                 model_.transform = placement.mat();
-                c.DrawModel(model_, offset, scale, color_);
+                model_.materials[0].maps[0].color = color_;
+                c.DrawModel(model_, offset, scale, c.WHITE);
             },
             .buildbox => {
                 const a = 1.0 / @as(comptime_float, BuildBox.scale);
