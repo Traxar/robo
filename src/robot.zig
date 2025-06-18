@@ -103,7 +103,7 @@ pub fn Type(options: Options) type {
             var closest_part_index: ?usize = null;
             for (0..robot.parts.len) |i| {
                 const part = robot.parts.get(i);
-                const mesh_collision = c.GetRayCollisionMesh(ray, part.part.mesh(), part.placement.mat());
+                const mesh_collision = c.GetRayCollisionMesh(ray, part.part.mesh(), part.placement.mat(1));
                 if (mesh_collision.hit and mesh_collision.distance < closest_mesh_distance) {
                     closest_mesh_distance = mesh_collision.distance;
                     closest_part_index = i;
@@ -116,7 +116,7 @@ pub fn Type(options: Options) type {
                 var closest_connection_distance = max;
                 const part = robot.parts.get(closest_part_index.?);
                 for (part.part.connections()) |part_connection| {
-                    const connection = part.placement.place(part_connection);
+                    const connection = part.placement.place(part_connection) catch unreachable;
                     const connection_collision = connection.rayCollision(ray);
                     if (connection_collision.hit and connection_collision.distance <= closest_connection_distance) {
                         if (connection_collision.distance < min) {
@@ -140,36 +140,33 @@ pub fn Type(options: Options) type {
             if (options.mark_collisions) @memset(robot.parts.items(.collides), false);
             if (new_placement_ == null) return false;
             const new_placement = new_placement_.?;
-            for (0..robot.parts.len) |i| {
+            for (0..robot.parts.len) |i| outer: {
                 const old_part = robot.parts.get(i);
                 //connections:
                 for (new_part.connections()) |new_connection| {
-                    const new_connection_placement_inv = new_placement.place(new_connection).inv();
+                    const new_connection_placement_inv = (new_placement.place(new_connection) catch {
+                        collides = true;
+                        if (!options.mark_collisions) break :outer else continue;
+                    }).inv();
                     for (old_part.part.connections()) |old_connection| {
-                        const old_connection_placement = old_part.placement.place(old_connection);
-                        const diff = new_connection_placement_inv.place(old_connection_placement);
+                        const old_connection_placement = old_part.placement.place(old_connection) catch unreachable;
+                        const diff = new_connection_placement_inv.place(old_connection_placement) catch continue;
                         const position_matches = @reduce(.And, diff.position == @as(Placement.Position, @splat(0)));
                         const z_axis_matches = diff.rotation.shuffle.mask()[2] == 2;
                         const z_dir_matches = diff.rotation.flip.mask(i8)[2] == 1;
                         if (position_matches and z_axis_matches and z_dir_matches) {
-                            if (options.mark_collisions) {
-                                collides = true;
-                                robot.parts.items(.collides)[i] = true;
-                            } else {
-                                return true;
-                            }
+                            collides = true;
+                            if (!options.mark_collisions) break :outer;
+                            robot.parts.items(.collides)[i] = true;
                         }
                     }
                 }
                 //buildboxes:
-                const newToOld = new_placement.inv().place(old_part.placement);
+                const newToOld = new_placement.inv().place(old_part.placement) catch continue;
                 if (new_part.buildBox().collides(newToOld, old_part.part.buildBox())) {
-                    if (options.mark_collisions) {
-                        collides = true;
-                        robot.parts.items(.collides)[i] = true;
-                    } else {
-                        return true;
-                    }
+                    collides = true;
+                    if (!options.mark_collisions) break :outer;
+                    robot.parts.items(.collides)[i] = true;
                 }
             }
             return collides;

@@ -60,8 +60,9 @@ pub const Part = enum {
     pub fn blueprint(part: Part) void {
         const offset = c.toVector3(@splat(0));
         const i: usize = @intFromEnum(part);
-        assets[i].transform = Placement.zero.mat();
-        c.DrawModel(assets[i], offset, BuildBox.scale + anti_zfighting, c.ColorAlpha(c.SKYBLUE, 0.25));
+        const scale = BuildBox.scale + anti_zfighting;
+        assets[i].transform = (Placement{}).mat(1.0 / scale);
+        c.DrawModel(assets[i], offset, scale, c.ColorAlpha(c.SKYBLUE, 0.25));
     }
 
     pub const RenderOptions = struct {
@@ -80,21 +81,22 @@ pub const Part = enum {
         switch (options.mode) {
             .default => {
                 var model_ = part.model();
-                model_.transform = placement.mat();
+                model_.transform = placement.mat(1.0 / scale);
                 model_.materials[0].maps[0].color = color_;
                 c.DrawModel(model_, offset, scale, c.WHITE);
             },
             .buildbox => {
-                const a = 1.0 / @as(comptime_float, BuildBox.scale);
+                const box_scale = 1.0 / @as(comptime_float, BuildBox.scale);
+                const mat_part = placement.mat(1);
                 const bb = part.buildBox();
                 var iter = bb.bounds.min;
                 while (true) : (if (!bb.bounds.next(&iter)) break) {
                     if (bb.at(iter)) {
-                        const P = @Vector(3, f32);
-                        const p: P = @floatFromInt(placement.scale(BuildBox.scale).move(iter).position);
-                        const v = c.toVector3(p / @as(P, @splat(BuildBox.scale)));
-                        c.DrawCube(v, a, a, a, color_);
-                        c.DrawCubeWires(v, a, a, a, c.BLACK);
+                        const mat_coll = (Placement{ .position = iter, .rotation = .none }).mat(box_scale);
+                        const mat_total = c.MatrixMultiply(mat_coll, mat_part);
+                        const pos = c.toVector3(.{ mat_total.m12, mat_total.m13, mat_total.m14 });
+                        c.DrawCube(pos, box_scale, box_scale, box_scale, color_); // slow!!
+                        c.DrawCubeWires(pos, box_scale, box_scale, box_scale, c.BLACK);
                     }
                 }
             },

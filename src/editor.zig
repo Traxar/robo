@@ -152,12 +152,15 @@ pub const Editor = struct {
                 c.CameraRay(editor.camera.raylib(options.camera));
         const ray_result = editor.robot.rayCollision(ray);
         editor.preview.target = ray_result.part_index;
-        if (ray_result.connection) |connection| {
-            editor.preview.placement = connection.place(editor.preview.rotation)
-                .place(editor.preview.part.connections()[0].inv());
-        } else {
-            editor.preview.placement = null;
-        }
+
+        editor.preview.placement = _: {
+            if (ray_result.connection) |connection| {
+                break :_ (connection.place(editor.preview.rotation) catch break :_ null)
+                    .place(editor.preview.part.connections()[0].inv()) catch break :_ null;
+            } else {
+                break :_ null;
+            }
+        };
 
         if (editor.preview.evalNeeded(preview_old)) {
             editor.preview.collides = editor.robot.buildCollision(editor.preview.part, editor.preview.placement);

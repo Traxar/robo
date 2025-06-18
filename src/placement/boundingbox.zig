@@ -30,11 +30,20 @@ pub fn Type(T: type) type {
             return if (c.empty()) null else c;
         }
 
-        pub fn place(a: BoundingBox, b: Placement) BoundingBox {
+        pub fn place(a: BoundingBox, b: Placement) !BoundingBox {
             var c = BoundingBox.none;
             if (!a.empty()) {
-                c.add(b.move(a.min).position);
-                c.add(b.move(a.max).position);
+                c.add((try b.move(a.min)).position);
+                c.add((try b.move(a.max)).position);
+            }
+            return c;
+        }
+
+        pub fn placeSat(a: BoundingBox, b: Placement) BoundingBox {
+            var c = BoundingBox.none;
+            if (!a.empty()) {
+                c.add(b.placeSat(.{ .position = a.min }).position);
+                c.add(b.placeSat(.{ .position = a.max }).position);
             }
             return c;
         }

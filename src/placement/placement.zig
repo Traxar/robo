@@ -7,13 +7,8 @@ pub fn Type(T: type) type {
         pub const Position = @Vector(3, T);
         pub const Rotation = @import("rotation.zig").Rotation;
         pub const BoundingBox = @import("boundingbox.zig").Type(T);
-        position: Position, //x,y,z
-        rotation: Rotation, //shuffle and flip
-
-        pub const zero = Placement{
-            .position = @splat(0),
-            .rotation = Rotation.none,
-        };
+        position: Position = @splat(0), //x,y,z
+        rotation: Rotation = Rotation.none, //shuffle and flip
 
         pub const connection = Placement{
             .position = .{ 0, 0, -1 },
@@ -24,9 +19,15 @@ pub fn Type(T: type) type {
         ///  a   b
         ///*-->*-->*
         ///```
-        pub fn place(a: Placement, b: Placement) Placement {
+        pub fn place(a: Placement, b: Placement) !Placement {
+            const pos, const overflow = @addWithOverflow(
+                a.position,
+                a.rotation.apply(T, b.position),
+            );
+            if (@reduce(.Or, overflow != @as(@Vector(3, u1), @splat(0))))
+                return error.OutOfBounds;
             return .{
-                .position = a.position + a.rotation.apply(T, b.position),
+                .position = pos,
                 .rotation = b.rotation.rotate(a.rotation),
             };
         }
@@ -35,10 +36,10 @@ pub fn Type(T: type) type {
         ///  a   b
         ///*-->*-->*
         ///```
-        pub fn move(a: Placement, b: Position) Placement {
+        pub fn placeSat(a: Placement, b: Placement) Placement {
             return .{
-                .position = a.position + a.rotation.apply(T, b),
-                .rotation = a.rotation,
+                .position = a.position +| a.rotation.apply(T, b.position),
+                .rotation = b.rotation.rotate(a.rotation),
             };
         }
 
@@ -53,13 +54,6 @@ pub fn Type(T: type) type {
             };
         }
 
-        pub fn scale(a: Placement, b: T) Placement {
-            return .{
-                .position = a.position * @as(Position, @splat(b)),
-                .rotation = a.rotation,
-            };
-        }
-
         pub fn inv(a: Placement) Placement {
             const s = a.rotation.inv();
             return .{
@@ -68,7 +62,7 @@ pub fn Type(T: type) type {
             };
         }
 
-        pub fn mat(a: Placement) c.Matrix {
+        pub fn mat(a: Placement, scale_: f32) c.Matrix {
             var res = c.Matrix{}; //zeros
             const rot = a.rotation.inv();
             switch (rot.shuffle.mask()[0]) {
@@ -89,19 +83,15 @@ pub fn Type(T: type) type {
                 2 => res.m10 = rot.flip.mask(f32)[2],
                 else => unreachable,
             }
-            switch (@typeInfo(T)) {
-                .int => {
-                    res.m12 = @floatFromInt(a.position[0]);
-                    res.m13 = @floatFromInt(a.position[1]);
-                    res.m14 = @floatFromInt(a.position[2]);
-                },
-                .float => {
-                    res.m12 = @floatCast(a.position[0]);
-                    res.m13 = @floatCast(a.position[1]);
-                    res.m14 = @floatCast(a.position[2]);
-                },
+            var pos: @Vector(3, f32) = switch (@typeInfo(T)) {
+                .int => @floatFromInt(a.position),
+                .float => @floatCast(a.position),
                 else => @compileError("unexpected type"),
-            }
+            };
+            pos *= @splat(scale_);
+            res.m12 = pos[0];
+            res.m13 = pos[1];
+            res.m14 = pos[2];
             res.m15 = 1;
             return res;
         }
@@ -110,7 +100,7 @@ pub fn Type(T: type) type {
         pub fn rayCollision(placement: Placement, ray: c.Ray) c.RayCollision {
             const miss = c.RayCollision{};
             const eps = 1e-8;
-            const inv_matrix = placement.inv().mat();
+            const inv_matrix = placement.inv().mat(1);
             const dir = c.Vector3Rotate(ray.direction, inv_matrix);
             if (dir.z <= eps) return miss; //ray looks in wrong direction
             const pos = c.Vector3Transform(ray.position, inv_matrix);
@@ -125,7 +115,7 @@ pub fn Type(T: type) type {
             if (x <= 0 or x >= 1) return miss;
             const y = 0.5 + pos.y + dir.y * t;
             if (y <= 0 or y >= 1) return miss;
-            const matrix = placement.mat();
+            const matrix = placement.mat(1);
             return c.RayCollision{
                 .hit = true,
                 .distance = t,
@@ -154,7 +144,7 @@ test "Placement" {
         .position = .{ 10 - 2, 20 + 1, 30 + 3 },
         .rotation = .{ .shuffle = .yzx, .flip = .nnp },
     };
-    const c__ = a.place(b);
+    const c__ = try a.place(b);
     try expect(@reduce(.And, c_.position == c__.position));
     try expect(c_.rotation == c__.rotation);
 

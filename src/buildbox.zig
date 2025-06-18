@@ -28,6 +28,8 @@ pub const BuildBox = struct {
             robot.parts.items(.placement),
         ) |part, placement| {
             assert(part == .cube); //only cubes allowed
+            assert(@reduce(.And, placement.position > @as(Position, @splat(std.math.minInt(i8)))));
+            assert(@reduce(.And, placement.position < @as(Position, @splat(std.math.maxInt(i8)))));
             box.bounds.add(placement.position);
         }
         const size: Index = @intCast(box.bounds.max + @as(Position, @splat(1)) - box.bounds.min);
@@ -59,14 +61,31 @@ pub const BuildBox = struct {
 
     /// a   p   b
     /// *------>*
-    pub fn collides(a: BuildBox, _p: Placement, b: BuildBox) bool {
-        const p = _p.scale(scale);
-        const q = p.inv();
-        if (a.bounds.intersect(b.bounds.place(p))) |itersection| {
+    pub fn collides(a: BuildBox, p: Placement, b: BuildBox) bool {
+        const p_ = Placement{ .position = p.position };
+        const b_ = _: {
+            var b_ = b.bounds.placeSat(p);
+            inline for (1..scale) |_| {
+                b_ = b_.placeSat(p_);
+            }
+            break :_ b_;
+        };
+        if (a.bounds.intersect(b_)) |itersection| {
+            //no unnecessary overlaps will be detected
+            //since: MIN < a.min and a.max < MAX
+            const q = p.inv();
+            const q_ = p_.inv();
             var iter = itersection.min;
-            while (true) {
-                if (a.at(iter) and b.at(q.move(iter).position)) return true;
-                if (!itersection.next(&iter)) break;
+            while (true) : (if (!itersection.next(&iter)) break) {
+                if (!a.at(iter)) continue;
+                const iter_ = _: {
+                    var iter_ = Placement{ .position = iter };
+                    inline for (1..scale) |_| {
+                        iter_ = q_.place(iter_) catch unreachable;
+                    }
+                    break :_ (q.place(iter_) catch unreachable).position;
+                };
+                if (b.at(iter_)) return true;
             }
         }
         return false;
