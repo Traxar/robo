@@ -107,17 +107,18 @@ pub const Part = enum {
                 c.DrawModel(model_, offset, scale, c.WHITE);
             },
             .buildbox => {
-                const box_scale = 1.0 / @as(comptime_float, BuildBox.scale);
-                const mat_part = placement.mat(1);
+                const mat_part = placement.mat(BuildBox.scale);
+                var model_ = Part.cube.model();
                 const bb = part.buildBox();
                 var iter = bb.bounds.min;
                 while (true) : (if (!bb.bounds.next(&iter)) break) {
                     if (bb.at(iter)) {
-                        const mat_coll = (Placement{ .position = iter, .rotation = .none }).mat(box_scale);
-                        const mat_total = c.MatrixMultiply(mat_coll, mat_part);
-                        const pos = c.toVector3(.{ mat_total.m12, mat_total.m13, mat_total.m14 });
-                        c.DrawCube(pos, box_scale, box_scale, box_scale, color_); // slow!!
-                        c.DrawCubeWires(pos, box_scale, box_scale, box_scale, c.BLACK);
+                        model_.transform = c.MatrixMultiply(
+                            (Placement{ .position = iter, .rotation = .none }).mat(1),
+                            mat_part,
+                        );
+                        model_.materials[0].maps[0].color = color_;
+                        c.DrawModel(model_, offset, 1.0 / @as(comptime_float, BuildBox.scale), c.WHITE);
                     }
                 }
             },
