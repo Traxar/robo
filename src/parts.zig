@@ -6,7 +6,8 @@ const Robot = @import("robot.zig").Type(.{ .mark_collisions = false });
 const BuildBox = @import("buildbox.zig").BuildBox;
 const misc = @import("misc.zig");
 
-var assets: [@typeInfo(Part).@"enum".fields.len]c.Model = undefined;
+var models: [@typeInfo(Part).@"enum".fields.len]c.Model = undefined;
+var model_bounds: [@typeInfo(Part).@"enum".fields.len]c.BoundingBox = undefined;
 var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
 
 const anti_zfighting = 0.001;
@@ -15,7 +16,8 @@ pub fn loadData(gpa: Allocator) !void {
     try misc.cwd("assets");
     try misc.cwd("models");
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
-        assets[i] = c.LoadModel(field.name ++ ".obj");
+        models[i] = c.LoadModel(field.name ++ ".obj");
+        model_bounds[i] = c.GetModelBoundingBox(models[i]);
     }
     try misc.cwd("..");
     try misc.cwd("buildboxes");
@@ -30,7 +32,7 @@ pub fn loadData(gpa: Allocator) !void {
 
 pub fn unloadData(gpa: Allocator) void {
     inline for (@typeInfo(Part).@"enum".fields, 0..) |_, i| {
-        c.UnloadModel(assets[i]);
+        c.UnloadModel(models[i]);
         buildBoxes[i].deinit(gpa);
     }
 }
@@ -42,14 +44,19 @@ pub const Part = enum {
     prism_concave,
     tetra,
 
-    pub fn mesh(part: Part) c.Mesh {
-        const i: usize = @intFromEnum(part);
-        return assets[i].meshes[0];
+    fn meshes(part: Part) []c.Mesh {
+        const m = part.model();
+        return m.meshes[0..@intCast(m.meshCount)];
     }
 
     fn model(part: Part) c.Model {
         const i: usize = @intFromEnum(part);
-        return assets[i];
+        return models[i];
+    }
+
+    fn modelBounds(part: Part) c.BoundingBox {
+        const i: usize = @intFromEnum(part);
+        return model_bounds[i];
     }
 
     pub fn buildBox(part: Part) BuildBox {
@@ -57,12 +64,26 @@ pub const Part = enum {
         return buildBoxes[i];
     }
 
+    pub fn rayCollision(part: Part, placement: Placement, ray: c.Ray) c.RayCollision {
+        const inv = placement.inv().mat(1);
+        const ray_ = c.Ray{ .position = c.Vector3Transform(ray.position, inv), .direction = c.Vector3Rotate(ray.direction, inv) };
+        var res = c.RayCollision{ .hit = false };
+        if (c.GetRayCollisionBox(ray_, part.modelBounds()).hit) {
+            for (part.meshes()) |mesh| {
+                const r = c.GetRayCollisionMesh(ray_, mesh, comptime c.MatrixIdentity());
+                if (r.hit and (!res.hit or r.distance < res.distance))
+                    res = r;
+            }
+        }
+        return res;
+    }
+
     pub fn blueprint(part: Part) void {
         const offset = c.toVector3(@splat(0));
         const i: usize = @intFromEnum(part);
         const scale = BuildBox.scale + anti_zfighting;
-        assets[i].transform = (Placement{}).mat(1.0 / scale);
-        c.DrawModel(assets[i], offset, scale, c.ColorAlpha(c.SKYBLUE, 0.25));
+        models[i].transform = (Placement{}).mat(1.0 / scale);
+        c.DrawModel(models[i], offset, scale, c.ColorAlpha(c.SKYBLUE, 0.25));
     }
 
     pub const RenderOptions = struct {

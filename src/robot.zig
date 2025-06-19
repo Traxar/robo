@@ -99,11 +99,11 @@ pub fn Type(options: Options) type {
                 .connection = Placement.connection,
             };
             const eps = 1e-5;
-            var closest_mesh_distance = std.math.floatMax(f32);
+            var closest_mesh_distance = std.math.inf(f32);
             var closest_part_index: ?usize = null;
             for (0..robot.parts.len) |i| {
                 const part = robot.parts.get(i);
-                const mesh_collision = c.GetRayCollisionMesh(ray, part.part.mesh(), part.placement.mat(1));
+                const mesh_collision = part.part.rayCollision(part.placement, ray);
                 if (mesh_collision.hit and mesh_collision.distance < closest_mesh_distance) {
                     closest_mesh_distance = mesh_collision.distance;
                     closest_part_index = i;
