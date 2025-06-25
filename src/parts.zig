@@ -117,7 +117,7 @@ pub const Part = enum {
         switch (options.mode) {
             .default => {
                 const model_ = part.model();
-                const transform = c.MatrixMultiply(scale_mat, placement.mat(1.0 / scale));
+                const transform = c.MatrixMultiply(scale_mat, placement.mat(1));
                 Renderer.addToBuffer(model_, color_, transform);
             },
             .buildbox => {
