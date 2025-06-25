@@ -17,6 +17,7 @@ pub const State = struct {
     mode: Mode = .edit,
     editor: Editor,
     menu: Menu = .{},
+    frame_start: i64 = 0,
 
     pub fn init(gpa: Allocator) !State {
         var state = State{
@@ -33,6 +34,7 @@ pub const State = struct {
     }
 
     pub fn run(self: *State) !bool {
+        self.frame_start = std.time.microTimestamp();
         if (c.WindowShouldClose()) return false;
         if (Bind.esc.pressed()) {
             self.menu.enabled = !self.menu.enabled;
@@ -62,7 +64,11 @@ pub const State = struct {
                 self.editor.render(self.options.editor);
             },
         }
-        c.DrawFPS(10, 10);
         Menu.show(self);
+
+        const frame_time = @as(f32, @floatFromInt(@max(1, std.time.microTimestamp() - self.frame_start))) * 1.0e-6;
+        var text_buffer = (" " ** 20).*;
+        const fps_text = std.fmt.bufPrint(text_buffer[0..], "FPS: {} ({})", .{ c.GetFPS(), @as(i32, @intFromFloat(@floor(1.0 / frame_time))) }) catch return;
+        c.DrawText(fps_text.ptr, 10, 10, 20, c.LIME);
     }
 };
