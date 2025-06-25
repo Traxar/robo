@@ -29,46 +29,48 @@ pub const State = struct {
         return state;
     }
 
-    pub fn deinit(self: *State) void {
-        self.editor.deinit();
+    pub fn deinit(state: *State) void {
+        state.editor.deinit();
     }
 
-    pub fn run(self: *State) !bool {
-        self.frame_start = std.time.microTimestamp();
+    pub fn run(state: *State) !bool {
+        state.frame_start = std.time.microTimestamp();
         if (c.WindowShouldClose()) return false;
         if (Bind.esc.pressed()) {
-            self.menu.enabled = !self.menu.enabled;
+            state.menu.enabled = !state.menu.enabled;
         }
-        if (!self.menu.enabled) {
-            switch (self.mode) {
+        if (!state.menu.enabled) {
+            switch (state.mode) {
                 .close => {
                     return false;
                 },
                 .edit => {
-                    try self.editor.update(self.options.editor);
+                    try state.editor.update(state.options.editor);
                 },
             }
         }
-        self.render();
+        state.render();
         return true;
     }
 
-    fn render(self: *State) void {
+    fn render(state: *State) void {
         c.BeginDrawing();
         defer c.EndDrawing();
         c.ClearBackground(c.RAYWHITE);
 
-        switch (self.mode) {
+        switch (state.mode) {
             .close => {},
             .edit => {
-                self.editor.render(self.options.editor);
+                state.editor.render(state.options.editor);
             },
         }
-        Menu.show(self);
+        Menu.show(state);
 
-        const frame_time = @as(f32, @floatFromInt(@max(1, std.time.microTimestamp() - self.frame_start))) * 1.0e-6;
-        var text_buffer = (" " ** 20).*;
-        const fps_text = std.fmt.bufPrint(text_buffer[0..], "FPS: {} ({})", .{ c.GetFPS(), @as(i32, @intFromFloat(@floor(1.0 / frame_time))) }) catch return;
-        c.DrawText(fps_text.ptr, 10, 10, 20, c.LIME);
+        if (state.options.show_fps) {
+            var text_buffer = (" " ** 20).*;
+            const frame_time = @as(f32, @floatFromInt(@max(1, std.time.microTimestamp() - state.frame_start))) * 1.0e-6;
+            const fps_text = std.fmt.bufPrint(text_buffer[0..], "FPS: {} ({})", .{ c.GetFPS(), @as(i32, @intFromFloat(@floor(1.0 / frame_time))) }) catch return;
+            c.DrawText(fps_text.ptr, 10, 10, 20, c.LIME);
+        }
     }
 };
