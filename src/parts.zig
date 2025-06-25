@@ -17,6 +17,7 @@ const anti_zfighting = 0.001;
 pub fn loadData(gpa: Allocator) !void {
     try misc.cwd("assets");
     try misc.cwd("shaders");
+    c.rlDisableBackfaceCulling();
     shader = c.LoadShader(
         c.TextFormat("instanced.vert.glsl", @as(c_int, 330)),
         c.TextFormat("instanced.frag.glsl", @as(c_int, 330)),
@@ -113,9 +114,6 @@ pub const Part = enum {
                 .buildbox => 1.0 / @as(comptime_float, BuildBox.scale),
             });
         const scale_mat = c.MatrixScale(scale, scale, scale);
-        const mirrored = placement.rotation.mirrored();
-        if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_FRONT);
-        defer if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_BACK);
         switch (options.mode) {
             .default => {
                 const model_ = part.model();
