@@ -19,8 +19,8 @@ pub fn loadData(gpa: Allocator) !void {
     try misc.cwd("shaders");
     c.rlDisableBackfaceCulling();
     shader = c.LoadShader(
-        c.TextFormat("instanced.vert.glsl", @as(c_int, 330)),
-        c.TextFormat("instanced.frag.glsl", @as(c_int, 330)),
+        "instanced.vert.glsl",
+        "instanced.frag.glsl",
     );
     shader.locs[c.SHADER_LOC_MATRIX_MVP] = c.GetShaderLocation(shader, "mvp");
     try misc.cwd("..");
