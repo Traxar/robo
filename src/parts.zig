@@ -5,18 +5,30 @@ const Placement = @import("placement.zig").Placement;
 const Robot = @import("robot.zig").Type(.{ .mark_collisions = false });
 const BuildBox = @import("buildbox.zig").BuildBox;
 const misc = @import("misc.zig");
+const Renderer = @import("renderer.zig");
 
 var models: [@typeInfo(Part).@"enum".fields.len]c.Model = undefined;
 var model_bounds: [@typeInfo(Part).@"enum".fields.len]c.BoundingBox = undefined;
 var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
+var shader: c.Shader = undefined;
 
 const anti_zfighting = 0.001;
 
 pub fn loadData(gpa: Allocator) !void {
     try misc.cwd("assets");
+    try misc.cwd("shaders");
+    shader = c.LoadShader(
+        c.TextFormat("instanced.vert.glsl", @as(c_int, 330)),
+        c.TextFormat("instanced.frag.glsl", @as(c_int, 330)),
+    );
+    shader.locs[c.SHADER_LOC_MATRIX_MVP] = c.GetShaderLocation(shader, "mvp");
+    try misc.cwd("..");
     try misc.cwd("models");
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
         models[i] = c.LoadModel(field.name ++ ".obj");
+        for (0..@intCast(models[i].materialCount)) |j| {
+            models[i].materials[j].shader = shader;
+        }
         model_bounds[i] = c.GetModelBoundingBox(models[i]);
     }
     try misc.cwd("..");
@@ -35,6 +47,7 @@ pub fn unloadData(gpa: Allocator) void {
         c.UnloadModel(models[i]);
         buildBoxes[i].deinit(gpa);
     }
+    c.UnloadShader(shader);
 }
 
 pub const Part = enum {
@@ -93,32 +106,34 @@ pub const Part = enum {
     };
 
     pub fn render(part: Part, placement: Placement, color: c.Color, options: RenderOptions) void {
-        const offset = c.toVector3(@splat(0));
         const color_ = if (options.preview) c.ColorAlpha(color, 0.25) else color;
-        const scale: f32 = if (options.preview) 1 + anti_zfighting else 1;
+        const scale = @as(f32, if (options.preview) 1.0 + anti_zfighting else 1.0) *
+            @as(f32, switch (options.mode) {
+                .default => 1.0,
+                .buildbox => 1.0 / @as(comptime_float, BuildBox.scale),
+            });
+        const scale_mat = c.MatrixScale(scale, scale, scale);
         const mirrored = placement.rotation.mirrored();
         if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_FRONT);
         defer if (mirrored) c.rlSetCullFace(c.RL_CULL_FACE_BACK);
         switch (options.mode) {
             .default => {
-                var model_ = part.model();
-                model_.transform = placement.mat(1.0 / scale);
-                model_.materials[0].maps[0].color = color_;
-                c.DrawModel(model_, offset, scale, c.WHITE);
+                const model_ = part.model();
+                const transform = c.MatrixMultiply(scale_mat, placement.mat(1.0 / scale));
+                Renderer.addToBuffer(model_, color_, transform);
             },
             .buildbox => {
-                const mat_part = placement.mat(BuildBox.scale);
-                var model_ = Part.cube.model();
+                const mat_part = placement.mat(1);
+                const model_ = Part.cube.model();
                 const bb = part.buildBox();
                 var iter = bb.bounds.min;
                 while (true) : (if (!bb.bounds.next(&iter)) break) {
                     if (bb.at(iter)) {
-                        model_.transform = c.MatrixMultiply(
-                            (Placement{ .position = iter, .rotation = .none }).mat(1),
+                        const transform = c.MatrixMultiply(scale_mat, c.MatrixMultiply(
+                            (Placement{ .position = iter, .rotation = .none }).mat(scale),
                             mat_part,
-                        );
-                        model_.materials[0].maps[0].color = color_;
-                        c.DrawModel(model_, offset, 1.0 / @as(comptime_float, BuildBox.scale), c.WHITE);
+                        ));
+                        Renderer.addToBuffer(model_, color_, transform);
                     }
                 }
             },

@@ -8,6 +8,7 @@ const Robot = @import("robot.zig").Type(.{
 const Part = @import("parts.zig").Part;
 const Placement = @import("placement.zig").Placement;
 const Color = @import("color.zig").Color;
+const Renderer = @import("renderer.zig");
 
 pub const Editor = struct {
     camera: Camera,
@@ -185,6 +186,7 @@ pub const Editor = struct {
                     },
                 );
             if (editor.blueprint) |part| part.blueprint();
+            Renderer.drawBuffer();
         }
         //overlay
         if (!editor.cursor) editor.crosshair();
