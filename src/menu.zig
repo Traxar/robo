@@ -1,6 +1,6 @@
 const c = @import("c.zig");
-const Options = @import("options.zig").Options;
 const State = @import("state.zig").State;
+const Options = State.Options;
 
 const Page = enum {
     main,

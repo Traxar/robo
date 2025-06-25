@@ -2,13 +2,17 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const c = @import("c.zig");
 const Bind = @import("bind.zig").Bind;
-const Options = @import("options.zig").Options;
 const Editor = @import("editor.zig").Editor;
 const Menu = @import("menu.zig").Menu;
 
 const Mode = enum {
     close,
     edit,
+};
+
+pub const Options = struct {
+    show_fps: bool = true,
+    editor: @import("editor.zig").Editor.Options = .{},
 };
 
 pub const State = struct {
