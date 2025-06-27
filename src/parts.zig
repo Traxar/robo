@@ -15,15 +15,14 @@ var shader: c.Shader = undefined;
 const anti_zfighting = 0.001;
 
 pub fn loadData(gpa: Allocator) !void {
-    try misc.cwd("assets");
-    try misc.cwd("shaders");
-    c.rlDisableBackfaceCulling();
-    shader = c.LoadShader(
-        "instanced.vert.glsl",
-        "instanced.frag.glsl",
+    shader = c.LoadShaderFromMemory(
+        @embedFile("shaders/instanced.vert.glsl"),
+        @embedFile("shaders/instanced.frag.glsl"),
     );
+    c.rlDisableBackfaceCulling(); //?workaround as shader does not (yet) support flipped placements
     shader.locs[c.SHADER_LOC_MATRIX_MVP] = c.GetShaderLocation(shader, "mvp");
-    try misc.cwd("..");
+
+    try misc.cwd("assets");
     try misc.cwd("models");
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
         models[i] = c.LoadModel(field.name ++ ".obj");
