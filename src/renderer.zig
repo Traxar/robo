@@ -3,7 +3,8 @@ const assert = std.debug.assert;
 const c = @import("c.zig");
 
 const buffer_size = 20000;
-var buffer: [buffer_size][16]f32 = undefined;
+var transform_buffer: [buffer_size][16]f32 = undefined;
+var color_buffer: [buffer_size][4]f32 = undefined;
 var length: usize = 0;
 var model: c.Model = undefined;
 
@@ -14,7 +15,8 @@ pub fn drawBuffer() void {
         drawMeshInstanced(
             model.meshes[i],
             model.materials[@intCast(model.meshMaterial[i])],
-            buffer[0..length],
+            transform_buffer[0..length],
+            color_buffer[0..length],
         );
     }
     length = 0;
@@ -25,34 +27,35 @@ pub fn addToBuffer(model_: c.Model, color: c.Color, transform: c.Matrix) void {
     if (length == 0) {
         model = model_;
     }
-    buffer[length] = compress(transform, color);
+    transform_buffer[length] = .{
+        transform.m0,
+        transform.m1,
+        transform.m2,
+        transform.m3,
+        transform.m4,
+        transform.m5,
+        transform.m6,
+        transform.m7,
+        transform.m8,
+        transform.m9,
+        transform.m10,
+        transform.m11,
+        transform.m12,
+        transform.m13,
+        transform.m14,
+        transform.m15,
+    };
+    color_buffer[length] = .{
+        @as(f32, @floatFromInt(color.r)) / 255.0,
+        @as(f32, @floatFromInt(color.g)) / 255.0,
+        @as(f32, @floatFromInt(color.b)) / 255.0,
+        @as(f32, @floatFromInt(color.a)) / 255.0,
+    };
     length += 1;
     if (length == buffer_size) drawBuffer();
 }
 
-//? handle color and transform seperatly
-fn compress(transform: c.Matrix, color: c.Color) [16]f32 {
-    return .{
-        transform.m0,
-        transform.m1,
-        transform.m2,
-        @as(f32, @floatFromInt(color.r)) / 255.0,
-        transform.m4,
-        transform.m5,
-        transform.m6,
-        @as(f32, @floatFromInt(color.g)) / 255.0,
-        transform.m8,
-        transform.m9,
-        transform.m10,
-        @as(f32, @floatFromInt(color.b)) / 255.0,
-        transform.m12,
-        transform.m13,
-        transform.m14,
-        @as(f32, @floatFromInt(color.a)) / 255.0,
-    };
-}
-
-fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][16]f32) void {
+fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][16]f32, colors: [][4]f32) void {
     // Bind shader program
     c.rlEnableShader(material.shader.id);
 
@@ -80,8 +83,10 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][16]f32) 
     const matProjection = c.rlGetMatrixProjection();
 
     // Upload view and projection matrices (if locations available)
-    if (material.shader.locs[c.SHADER_LOC_MATRIX_VIEW] != -1) c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_VIEW], matView);
-    if (material.shader.locs[c.SHADER_LOC_MATRIX_PROJECTION] != -1) c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_PROJECTION], matProjection);
+    if (material.shader.locs[c.SHADER_LOC_MATRIX_VIEW] != -1)
+        c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_VIEW], matView);
+    if (material.shader.locs[c.SHADER_LOC_MATRIX_PROJECTION] != -1)
+        c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_PROJECTION], matProjection);
 
     // Enable mesh VAO to attach new buffer
     _ = c.rlEnableVertexArray(mesh.vaoId);
@@ -92,9 +97,18 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][16]f32) 
     for (0..4) |i_| {
         const i: c_int = @intCast(i_);
         c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i));
-        c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i), 4, c.RL_FLOAT, false, @intCast(@sizeOf(c.Matrix)), @intCast(i * @sizeOf(c.Vector4)));
+        c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i), 4, c.RL_FLOAT, false, @intCast(@sizeOf([16]f32)), @intCast(i * @sizeOf([4]f32)));
         c.rlSetVertexAttributeDivisor(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i), 1);
     }
+    c.rlDisableVertexBuffer();
+
+    const colorsVboId = c.rlLoadVertexBuffer(colors.ptr, @intCast(colors.len * @sizeOf([4]f32)), false);
+
+    // Instances transformation matrices are sent to shader attribute location: SHADER_LOC_VERTEX_INSTANCE_CX
+    c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1]));
+    c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1]), 4, c.RL_FLOAT, false, @intCast(@sizeOf([4]f32)), 0);
+    c.rlSetVertexAttributeDivisor(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1]), 1);
+
     c.rlDisableVertexBuffer();
 
     c.rlDisableVertexArray();
@@ -104,7 +118,8 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][16]f32) 
     const matModelView = c.MatrixMultiply(c.rlGetMatrixTransform(), matView);
 
     // Upload model normal matrix (if locations available)
-    if (material.shader.locs[c.SHADER_LOC_MATRIX_NORMAL] != -1) c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_NORMAL], c.MatrixTranspose(c.MatrixInvert(matModel)));
+    if (material.shader.locs[c.SHADER_LOC_MATRIX_NORMAL] != -1)
+        c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_NORMAL], c.MatrixTranspose(c.MatrixInvert(matModel)));
 
     //-----------------------------------------------------
 
@@ -235,4 +250,5 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][16]f32) 
 
     // Remove instance transforms buffer
     c.rlUnloadVertexBuffer(transformsVboId);
+    c.rlUnloadVertexBuffer(colorsVboId);
 }

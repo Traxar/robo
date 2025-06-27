@@ -21,6 +21,7 @@ pub fn loadData(gpa: Allocator) !void {
     );
     c.rlDisableBackfaceCulling(); //?workaround as shader does not (yet) support flipped placements
     shader.locs[c.SHADER_LOC_MATRIX_MVP] = c.GetShaderLocation(shader, "mvp");
+    shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1] = c.GetShaderLocationAttrib(shader, "instanceColor");
 
     try misc.cwd("assets");
     try misc.cwd("models");
