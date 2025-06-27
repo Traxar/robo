@@ -3,7 +3,7 @@ const assert = std.debug.assert;
 const c = @import("c.zig");
 
 const buffer_size = 1 << 11;
-var transform_buffer: [buffer_size][16]f32 = undefined;
+var transform_buffer: [buffer_size][12]f32 = undefined;
 var color_buffer: [buffer_size][4]f32 = undefined;
 var length: usize = 0;
 var model: c.Model = undefined;
@@ -31,19 +31,15 @@ pub fn addToBuffer(model_: c.Model, color: c.Color, transform: c.Matrix) void {
         transform.m0,
         transform.m1,
         transform.m2,
-        transform.m3,
         transform.m4,
         transform.m5,
         transform.m6,
-        transform.m7,
         transform.m8,
         transform.m9,
         transform.m10,
-        transform.m11,
         transform.m12,
         transform.m13,
         transform.m14,
-        transform.m15,
     };
     color_buffer[length] = .{
         @as(f32, @floatFromInt(color.r)) / 255.0,
@@ -55,7 +51,7 @@ pub fn addToBuffer(model_: c.Model, color: c.Color, transform: c.Matrix) void {
     if (length == buffer_size) drawBuffer();
 }
 
-fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][16]f32, colors: [][4]f32) void {
+fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][12]f32, colors: [][4]f32) void {
     // Bind shader program
     c.rlEnableShader(material.shader.id);
 
@@ -91,13 +87,13 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][16]f32, 
     // Enable mesh VAO to attach new buffer
     _ = c.rlEnableVertexArray(mesh.vaoId);
 
-    const transformsVboId = c.rlLoadVertexBuffer(transforms.ptr, @intCast(transforms.len * @sizeOf([16]f32)), false);
+    const transformsVboId = c.rlLoadVertexBuffer(transforms.ptr, @intCast(transforms.len * @sizeOf([12]f32)), false);
 
     // Instances transformation matrices are sent to shader attribute location: SHADER_LOC_VERTEX_INSTANCE_TX
     for (0..4) |i_| {
         const i: c_int = @intCast(i_);
         c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i));
-        c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i), 4, c.RL_FLOAT, false, @intCast(@sizeOf([16]f32)), @intCast(i * @sizeOf([4]f32)));
+        c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i), 3, c.RL_FLOAT, false, @intCast(@sizeOf([12]f32)), @intCast(i * @sizeOf([3]f32)));
         c.rlSetVertexAttributeDivisor(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i), 1);
     }
     c.rlDisableVertexBuffer();

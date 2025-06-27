@@ -5,7 +5,7 @@ in vec3 vertexPosition;
 in vec2 vertexTexCoord;
 in vec3 vertexNormal;
 
-in mat4 instanceTransform;
+in mat4x3 instanceTransform;
 in vec4 instanceColor;
 
 // Input uniform values
@@ -26,5 +26,5 @@ void main()
     // fragNormal = vertexNormal;
 
     // Calculate final vertex position, note that we multiply mvp by instanceTransform
-    gl_Position = mvp * instanceTransform * vec4(vertexPosition, 1.0);
+    gl_Position = mvp * vec4(instanceTransform * vec4(vertexPosition, 1.0), 1);
 }
