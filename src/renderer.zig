@@ -8,6 +8,22 @@ var color_buffer: [buffer_size][4]f32 = undefined;
 var length: usize = 0;
 var model: c.Model = undefined;
 
+pub var shader: c.Shader = undefined;
+
+pub fn init() void {
+    shader = c.LoadShaderFromMemory(
+        @embedFile("shaders/instanced.vert.glsl"),
+        @embedFile("shaders/instanced.frag.glsl"),
+    );
+    c.rlDisableBackfaceCulling(); //?workaround as shader does not (yet) support flipped placements
+    shader.locs[c.SHADER_LOC_MATRIX_MVP] = c.GetShaderLocation(shader, "mvp");
+    shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1] = c.GetShaderLocationAttrib(shader, "instanceColor");
+}
+
+pub fn deinit() void {
+    c.UnloadShader(shader);
+}
+
 pub fn drawBuffer() void {
     if (length == 0) return;
     //? instancing shader needed

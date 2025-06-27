@@ -5,30 +5,21 @@ const Placement = @import("placement.zig").Placement;
 const Robot = @import("robot.zig").Type(.{ .mark_collisions = false });
 const BuildBox = @import("buildbox.zig").BuildBox;
 const misc = @import("misc.zig");
-const Renderer = @import("renderer.zig");
+const renderer = @import("renderer.zig");
 
 var models: [@typeInfo(Part).@"enum".fields.len]c.Model = undefined;
 var model_bounds: [@typeInfo(Part).@"enum".fields.len]c.BoundingBox = undefined;
 var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
-var shader: c.Shader = undefined;
 
 const anti_zfighting = 0.001;
 
 pub fn loadData(gpa: Allocator) !void {
-    shader = c.LoadShaderFromMemory(
-        @embedFile("shaders/instanced.vert.glsl"),
-        @embedFile("shaders/instanced.frag.glsl"),
-    );
-    c.rlDisableBackfaceCulling(); //?workaround as shader does not (yet) support flipped placements
-    shader.locs[c.SHADER_LOC_MATRIX_MVP] = c.GetShaderLocation(shader, "mvp");
-    shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1] = c.GetShaderLocationAttrib(shader, "instanceColor");
-
     try misc.cwd("assets");
     try misc.cwd("models");
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
         models[i] = c.LoadModel(field.name ++ ".obj");
         for (0..@intCast(models[i].materialCount)) |j| {
-            models[i].materials[j].shader = shader;
+            models[i].materials[j].shader = renderer.shader;
         }
         model_bounds[i] = c.GetModelBoundingBox(models[i]);
     }
@@ -48,7 +39,6 @@ pub fn unloadData(gpa: Allocator) void {
         c.UnloadModel(models[i]);
         buildBoxes[i].deinit(gpa);
     }
-    c.UnloadShader(shader);
 }
 
 pub const Part = enum {
@@ -118,7 +108,7 @@ pub const Part = enum {
             .default => {
                 const model_ = part.model();
                 const transform = c.MatrixMultiply(scale_mat, placement.mat(1));
-                Renderer.addToBuffer(model_, color_, transform);
+                renderer.addToBuffer(model_, color_, transform);
             },
             .buildbox => {
                 const mat_part = placement.mat(1);
@@ -131,7 +121,7 @@ pub const Part = enum {
                             (Placement{ .position = iter, .rotation = .none }).mat(scale),
                             mat_part,
                         ));
-                        Renderer.addToBuffer(model_, color_, transform);
+                        renderer.addToBuffer(model_, color_, transform);
                     }
                 }
             },

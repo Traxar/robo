@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const c = @import("c.zig");
+const renderer = @import("renderer.zig");
 const parts = @import("parts.zig");
 const State = @import("state.zig").State;
 const misc = @import("misc.zig");
@@ -28,7 +29,7 @@ fn init() !void {
     try misc.set_cwd(dir_path);
     try misc.cwd("..");
     try misc.cwd("..");
-
+    renderer.init();
     try parts.loadData(allocator);
 
     state = try State.init(allocator);
@@ -37,6 +38,7 @@ fn init() !void {
 fn deinit() void {
     state.deinit();
     parts.unloadData(allocator);
+    renderer.deinit();
     if (gpa.deinit() == .leak) @panic("MEMORY LEAKED");
     c.CloseWindow();
 }
