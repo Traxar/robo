@@ -2,7 +2,7 @@ const std = @import("std");
 const assert = std.debug.assert;
 const c = @import("c.zig");
 
-const buffer_size = 20000;
+const buffer_size = 1 << 11;
 var transform_buffer: [buffer_size][16]f32 = undefined;
 var color_buffer: [buffer_size][4]f32 = undefined;
 var length: usize = 0;
