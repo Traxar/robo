@@ -20,12 +20,11 @@ out vec4 fragColor;
 void main()
 {
     // Send vertex attributes to fragment shader
-    //fragPosition = vec3(instanceTransform * vec4(vertexPosition, 1.0));
-
+    // fragPosition = vec3(instanceTransform * vec4(vertexPosition, 1.0));
     fragTexCoord = vertexTexCoord;
     fragColor = instanceColor;
-    //fragNormal = vertexNormal;
+    // fragNormal = vertexNormal;
 
     // Calculate final vertex position, note that we multiply mvp by instanceTransform
-    gl_Position = mvp * instanceTransform * vec4(vertexPosition,1.0);
+    gl_Position = mvp * instanceTransform * vec4(vertexPosition, 1.0);
 }
