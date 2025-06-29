@@ -8,6 +8,9 @@ var color_buffer: [buffer_size][4]f32 = undefined;
 var length: usize = 0;
 var model: c.Model = undefined;
 
+var transformVboId: c_uint = undefined;
+var colorVboId: c_uint = undefined;
+
 pub var shader: c.Shader = undefined;
 
 pub fn init() void {
@@ -18,9 +21,15 @@ pub fn init() void {
     c.rlDisableBackfaceCulling(); //?workaround as shader does not (yet) support flipped placements
     shader.locs[c.SHADER_LOC_MATRIX_MVP] = c.GetShaderLocation(shader, "mvp");
     shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1] = c.GetShaderLocationAttrib(shader, "instanceColor");
+
+    transformVboId = c.rlLoadVertexBuffer(&transform_buffer, @intCast(@sizeOf(@TypeOf(transform_buffer))), false);
+    colorVboId = c.rlLoadVertexBuffer(&color_buffer, @intCast(@sizeOf(@TypeOf(color_buffer))), false);
 }
 
 pub fn deinit() void {
+    c.rlUnloadVertexBuffer(transformVboId);
+    c.rlUnloadVertexBuffer(colorVboId);
+
     c.UnloadShader(shader);
 }
 
@@ -103,7 +112,7 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][12]f32, 
     // Enable mesh VAO to attach new buffer
     _ = c.rlEnableVertexArray(mesh.vaoId);
 
-    const transformsVboId = c.rlLoadVertexBuffer(transforms.ptr, @intCast(transforms.len * @sizeOf([12]f32)), false);
+    c.rlUpdateVertexBuffer(transformVboId, transforms.ptr, @intCast(transforms.len * @sizeOf(@TypeOf(transforms[0]))), 0);
 
     // Instances transformation matrices are sent to shader attribute location: SHADER_LOC_VERTEX_INSTANCE_TX
     for (0..4) |i_| {
@@ -114,7 +123,7 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][12]f32, 
     }
     c.rlDisableVertexBuffer();
 
-    const colorsVboId = c.rlLoadVertexBuffer(colors.ptr, @intCast(colors.len * @sizeOf([4]f32)), false);
+    c.rlUpdateVertexBuffer(colorVboId, colors.ptr, @intCast(colors.len * @sizeOf(@TypeOf(colors[0]))), 0);
 
     // Instances transformation matrices are sent to shader attribute location: SHADER_LOC_VERTEX_INSTANCE_CX
     c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1]));
@@ -259,8 +268,4 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, transforms: [][12]f32, 
 
     // Disable shader program
     c.rlDisableShader();
-
-    // Remove instance transforms buffer
-    c.rlUnloadVertexBuffer(transformsVboId);
-    c.rlUnloadVertexBuffer(colorsVboId);
 }
