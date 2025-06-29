@@ -38,3 +38,29 @@ pub fn Vector3Rotate(v: c.Vector3, mat: c.Matrix) c.Vector3 {
 pub fn CameraRay(camera: c.Camera3D) c.Ray {
     return c.Ray{ .position = camera.position, .direction = c.Vector3Subtract(camera.target, camera.position) };
 }
+
+pub fn loadVertexBuffer(T: type, data: []T, dynamic: bool) c_uint {
+    return c.rlLoadVertexBuffer(data.ptr, @intCast(data.len * @sizeOf(T)), dynamic);
+}
+
+pub fn updateVertexBuffer(vboId: c_uint, T: type, data: []T, offset: usize) void {
+    c.rlUpdateVertexBuffer(vboId, data.ptr, @intCast(data.len * @sizeOf(T)), @intCast(offset));
+}
+
+/// `stride` and `offset` are relative to the `BaseType`
+/// `compSize` defines how many elements of `BaseType` go into this attribute
+pub fn setVertexAttribute(attribute: c_int, Type: type, stride: usize, offset: usize) void {
+    const compSize = switch (@typeInfo(Type)) {
+        .vector => |v| v.len,
+        else => 1,
+    };
+    const BaseType = switch (@typeInfo(Type)) {
+        .vector => |v| v.child,
+        else => Type,
+    };
+    const typeId = switch (BaseType) {
+        f32 => c.RL_FLOAT,
+        else => unreachable, // not implemented. if needed add above
+    };
+    c.rlSetVertexAttribute(@intCast(attribute), @intCast(compSize), typeId, false, @intCast(stride * @sizeOf(BaseType)), @intCast(offset * @sizeOf(BaseType)));
+}
