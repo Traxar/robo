@@ -45,7 +45,7 @@ pub const Editor = struct {
             back: Bind = .{ .key = c.KEY_S },
             right: Bind = .{ .key = c.KEY_D },
             up: Bind = .{ .key = c.KEY_SPACE },
-            down: Bind = .{ .key = c.KEY_LEFT_CONTROL },
+            down: Bind = .{ .key = c.KEY_LEFT_SHIFT },
             place: Bind = .{ .mouse = c.MOUSE_BUTTON_LEFT },
             remove: Bind = .{ .mouse = c.MOUSE_BUTTON_RIGHT },
             pick: Bind = .{ .mouse = c.MOUSE_BUTTON_MIDDLE },

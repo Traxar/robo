@@ -74,7 +74,7 @@ pub fn Type(options: Options) type {
             }
             var file = try std.fs.cwd().createFile("ro.bot", .{});
             defer file.close();
-            //try std.zon.stringify.serialize(save_format, .{}, file.writer());
+            //std.zon.stringify.serialize(save_format, .{}, &file.writer(&.{}).); //TODO fix save and load
         }
 
         pub fn load(path: []const u8, gpa: Allocator) !Robot {
