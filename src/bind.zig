@@ -1,4 +1,4 @@
-const c = @import("c.zig");
+const c = @import("c.zig").c;
 pub const Bind = struct {
     key: c_int = c.KEY_NULL, //c.KEY_...
     mouse: ?c_int = null, //c.MOUSE_BUTTON_... scrolling has to be hardcoded for now

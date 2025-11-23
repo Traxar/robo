@@ -6,7 +6,7 @@ const parts = @import("parts.zig");
 const State = @import("state.zig").State;
 const misc = @import("misc.zig");
 
-var gpa = std.heap.DebugAllocator(.{}){};
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 var state: State = undefined;
 
@@ -17,12 +17,11 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    c.InitWindow(1280, 720, "robo");
-    c.SetExitKey(c.KEY_NULL);
+    try c.Window.init(1280, 720, "robo");
+    errdefer c.Window.deinit();
     // framerate:
-    const monitor_id = c.GetCurrentMonitor();
-    const monitor_refresh_rate = c.GetMonitorRefreshRate(monitor_id);
-    c.SetTargetFPS(monitor_refresh_rate);
+    c.Fps.set(c.Window.monitor().rate());
+
     // working directory
     const dir_path = try std.fs.selfExeDirPathAlloc(allocator);
     defer allocator.free(dir_path);
@@ -39,6 +38,6 @@ fn deinit() void {
     state.deinit();
     parts.unloadData(allocator);
     renderer.deinit();
+    c.Window.deinit();
     if (gpa.deinit() == .leak) @panic("MEMORY LEAKED");
-    c.CloseWindow();
 }

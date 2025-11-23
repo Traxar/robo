@@ -2,10 +2,9 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Part = @import("parts.zig").Part;
 const Placement = @import("placement.zig").Placement;
-const c = @import("c.zig");
+const d = @import("c.zig");
+const c = d.c;
 const Color = @import("color.zig").Color;
-const Ray = c.Ray;
-const RayCollision = c.RayCollision;
 
 pub const Options = struct {
     mark_collisions: bool = false,
@@ -75,11 +74,11 @@ pub fn Type(options: Options) type {
             }
             var file = try std.fs.cwd().createFile("ro.bot", .{});
             defer file.close();
-            try std.zon.stringify.serialize(save_format, .{}, file.writer());
+            //try std.zon.stringify.serialize(save_format, .{}, file.writer());
         }
 
         pub fn load(path: []const u8, gpa: Allocator) !Robot {
-            const source = try std.fs.cwd().readFileAllocOptions(gpa, path, 1_000_000, null, 1, 0);
+            const source = try std.fs.cwd().readFileAllocOptions(gpa, path, 1_000_000, null, .@"1", 0);
             defer gpa.free(source);
             const save_format = try std.zon.parse.fromSlice(SaveFormat, gpa, source, null, .{});
             var robot = try Robot.init(gpa, save_format.parts.len);
@@ -93,7 +92,7 @@ pub fn Type(options: Options) type {
             return robot;
         }
 
-        pub fn rayCollision(robot: Robot, ray: Ray) struct { part_index: ?usize, connection: ?Placement } {
+        pub fn rayCollision(robot: Robot, ray: d.Ray) struct { part_index: ?usize, connection: ?Placement } {
             if (robot.parts.len == 0) return .{
                 .part_index = null,
                 .connection = Placement.connection,
@@ -103,10 +102,11 @@ pub fn Type(options: Options) type {
             var closest_part_index: ?usize = null;
             for (0..robot.parts.len) |i| {
                 const part = robot.parts.get(i);
-                const mesh_collision = part.part.rayCollision(part.placement, ray);
-                if (mesh_collision.hit and mesh_collision.distance < closest_mesh_distance) {
-                    closest_mesh_distance = mesh_collision.distance;
-                    closest_part_index = i;
+                if (part.part.rayCollision(part.placement, ray)) |hit| {
+                    if (hit.dist < closest_mesh_distance) {
+                        closest_mesh_distance = hit.dist;
+                        closest_part_index = i;
+                    }
                 }
             }
             var closest_connection: ?Placement = null;
@@ -117,14 +117,15 @@ pub fn Type(options: Options) type {
                 const part = robot.parts.get(closest_part_index.?);
                 for (part.part.connections()) |part_connection| {
                     const connection = part.placement.place(part_connection) catch unreachable;
-                    const connection_collision = connection.rayCollision(ray);
-                    if (connection_collision.hit and connection_collision.distance <= closest_connection_distance) {
-                        if (connection_collision.distance < min) {
-                            closest_connection = null;
-                            break;
-                        } else {
-                            closest_connection_distance = connection_collision.distance;
-                            closest_connection = connection;
+                    if (connection.rayCollision(ray)) |hit| {
+                        if (hit.dist <= closest_connection_distance) {
+                            if (hit.dist < min) {
+                                closest_connection = null;
+                                break;
+                            } else {
+                                closest_connection_distance = hit.dist;
+                                closest_connection = connection;
+                            }
                         }
                     }
                 }

@@ -1,4 +1,5 @@
-const c = @import("c.zig");
+const d = @import("c.zig");
+const c = d.c;
 const State = @import("state.zig").State;
 const Options = State.Options;
 

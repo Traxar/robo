@@ -1,18 +1,20 @@
 const std = @import("std");
 const assert = std.debug.assert;
-const c = @import("c.zig");
+const d = @import("c.zig");
+const c = d.c;
+const loadVertexBuffer = @import("c.zig").loadVertexBuffer;
 
 const buffer_size = 1 << 11;
 var buffer: [buffer_size]RenderInfo = undefined;
 var length: usize = 0;
-var model: c.Model = undefined;
+var model: d.Model = undefined;
 
 var partVboId: c_uint = undefined;
 
-pub var shader: c.Shader = undefined;
+pub var shader: d.Shader = undefined;
 
-const RenderTransform = [12]f32;
 const RenderColor = [4]f32;
+const RenderTransform = [12]f32;
 
 const RenderInfo = struct {
     transform: RenderTransform,
@@ -20,55 +22,55 @@ const RenderInfo = struct {
 };
 
 pub fn init() void {
-    assert(@sizeOf(RenderInfo) == 16 * @sizeOf(f32));
-    shader = c.LoadShaderFromMemory(
+    if (@sizeOf(RenderInfo) != 16 * @sizeOf(f32)) @compileError("nope");
+    shader = .load(
         @embedFile("shaders/instanced.vert.glsl"),
         @embedFile("shaders/instanced.frag.glsl"),
     );
     c.rlDisableBackfaceCulling(); //?workaround as shader does not (yet) support flipped placements
-    shader.locs[c.SHADER_LOC_MATRIX_MVP] = c.GetShaderLocation(shader, "mvp");
-    shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1] = c.GetShaderLocationAttrib(shader, "instanceColor");
+    shader.internal.locs[c.SHADER_LOC_MATRIX_MVP] = shader.locationUniform("mvp");
+    shader.internal.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1] = shader.locationInput("instanceColor");
 
-    partVboId = c.loadVertexBuffer(RenderInfo, buffer[0..buffer_size], false);
+    partVboId = d.loadVertexBuffer(RenderInfo, buffer[0..buffer_size], false);
 }
 
 pub fn deinit() void {
     c.rlUnloadVertexBuffer(partVboId);
 
-    c.UnloadShader(shader);
+    shader.unload();
 }
 
 pub fn drawBuffer() void {
     if (length == 0) return;
     //? instancing shader needed
-    for (0..@intCast(model.meshCount)) |i| {
+    for (0..@intCast(model.internal.meshCount)) |i| {
         drawMeshInstanced(
-            model.meshes[i],
-            model.materials[@intCast(model.meshMaterial[i])],
+            model.internal.meshes[i],
+            model.internal.materials[@intCast(model.internal.meshMaterial[i])],
             buffer[0..length],
         );
     }
     length = 0;
 }
 
-pub fn addToBuffer(model_: c.Model, color: c.Color, transform: c.Matrix) void {
+pub fn addToBuffer(model_: d.Model, color: c.Color, transform: d.Transform) void {
     if (!std.meta.eql(model_, model)) drawBuffer();
     if (length == 0) {
         model = model_;
     }
     buffer[length].transform = .{
-        transform.m0,
-        transform.m1,
-        transform.m2,
-        transform.m4,
-        transform.m5,
-        transform.m6,
-        transform.m8,
-        transform.m9,
-        transform.m10,
-        transform.m12,
-        transform.m13,
-        transform.m14,
+        transform.rot.col[0][0],
+        transform.rot.col[0][1],
+        transform.rot.col[0][2],
+        transform.rot.col[1][0],
+        transform.rot.col[1][1],
+        transform.rot.col[1][2],
+        transform.rot.col[2][0],
+        transform.rot.col[2][1],
+        transform.rot.col[2][2],
+        transform.pos[0],
+        transform.pos[1],
+        transform.pos[2],
     };
     buffer[length].color = .{
         @as(f32, @floatFromInt(color.r)) / 255.0,
@@ -116,19 +118,18 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, renderInfos: []RenderIn
     // Enable mesh VAO to attach new buffer
     _ = c.rlEnableVertexArray(mesh.vaoId);
 
-    c.updateVertexBuffer(partVboId, RenderInfo, renderInfos, 0);
+    d.updateVertexBuffer(partVboId, RenderInfo, renderInfos, 0);
 
     // Instances transformation matrices are sent to shader attribute location: SHADER_LOC_VERTEX_INSTANCE_TX
     for (0..4) |i_| {
         const i: c_int = @intCast(i_);
         c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i));
-        c.setVertexAttribute(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i, @Vector(3, f32), 16, 3 * i_);
+        d.setVertexAttribute(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i, @Vector(3, f32), 16, 3 * i_);
         c.rlSetVertexAttributeDivisor(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i), 1);
     }
 
-    // Instances transformation matrices are sent to shader attribute location: SHADER_LOC_VERTEX_INSTANCE_CX
     c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1]));
-    c.setVertexAttribute(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1], @Vector(4, f32), 16, 12);
+    d.setVertexAttribute(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1], @Vector(4, f32), 16, 12);
     c.rlSetVertexAttributeDivisor(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1]), 1);
 
     c.rlDisableVertexBuffer();
@@ -218,30 +219,14 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, renderInfos: []RenderIn
         if (mesh.indices != null) c.rlEnableVertexBufferElement(mesh.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES]);
     }
 
-    const eyeCount: usize = if (c.rlIsStereoRenderEnabled()) 2 else 1;
+    // Calculate model-view-projection matrix (MVP)
+    const matModelViewProjection = c.MatrixMultiply(matModelView, matProjection);
 
-    for (0..eyeCount) |eye_| {
-        const eye: c_int = @intCast(eye_);
-        // Calculate model-view-projection matrix (MVP)
-        var matModelViewProjection = c.MatrixIdentity();
-        if (eyeCount == 1) {
-            matModelViewProjection = c.MatrixMultiply(matModelView, matProjection);
-        } else {
-            // Setup current eye viewport (half screen width)
-            c.rlViewport(@divFloor(eye * c.rlGetFramebufferWidth(), 2), 0, @divFloor(c.rlGetFramebufferWidth(), 2), c.rlGetFramebufferHeight());
-            matModelViewProjection = c.MatrixMultiply(c.MatrixMultiply(matModelView, c.rlGetMatrixViewOffsetStereo(eye)), c.rlGetMatrixProjectionStereo(eye));
-        }
+    // Send combined model-view-projection matrix to shader
+    c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_MVP], matModelViewProjection);
 
-        // Send combined model-view-projection matrix to shader
-        c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_MVP], matModelViewProjection);
-
-        // Draw mesh instanced
-        if (mesh.indices != null) {
-            c.rlDrawVertexArrayElementsInstanced(0, mesh.triangleCount * 3, null, @intCast(renderInfos.len));
-        } else {
-            c.rlDrawVertexArrayInstanced(0, mesh.vertexCount, @intCast(renderInfos.len));
-        }
-    }
+    // Draw mesh instanced
+    c.rlDrawVertexArrayInstanced(0, mesh.vertexCount, @intCast(renderInfos.len));
 
     // Unbind all bound texture maps
     for (0..12) |i_| {

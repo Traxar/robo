@@ -1,14 +1,15 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const c = @import("c.zig");
+const d = @import("c.zig");
+const c = d.c;
 const Placement = @import("placement.zig").Placement;
 const Robot = @import("robot.zig").Type(.{ .mark_collisions = false });
 const BuildBox = @import("buildbox.zig").BuildBox;
 const misc = @import("misc.zig");
 const renderer = @import("renderer.zig");
 
-var models: [@typeInfo(Part).@"enum".fields.len]c.Model = undefined;
-var model_bounds: [@typeInfo(Part).@"enum".fields.len]c.BoundingBox = undefined;
+var models: [@typeInfo(Part).@"enum".fields.len]d.Model = undefined;
+var model_bounds: [@typeInfo(Part).@"enum".fields.len]d.BoundingBox = undefined;
 var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
 
 const anti_zfighting = 0.001;
@@ -17,11 +18,11 @@ pub fn loadData(gpa: Allocator) !void {
     try misc.cwd("assets");
     try misc.cwd("models");
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
-        models[i] = c.LoadModel(field.name ++ ".obj");
-        for (0..@intCast(models[i].materialCount)) |j| {
-            models[i].materials[j].shader = renderer.shader;
+        models[i] = .load(field.name ++ ".obj");
+        for (0..@intCast(models[i].internal.materialCount)) |j| {
+            models[i].internal.materials[j].shader = renderer.shader.internal;
         }
-        model_bounds[i] = c.GetModelBoundingBox(models[i]);
+        model_bounds[i] = models[i].bounds();
     }
     try misc.cwd("..");
     try misc.cwd("buildboxes");
@@ -36,7 +37,7 @@ pub fn loadData(gpa: Allocator) !void {
 
 pub fn unloadData(gpa: Allocator) void {
     inline for (@typeInfo(Part).@"enum".fields, 0..) |_, i| {
-        c.UnloadModel(models[i]);
+        models[i].unload();
         buildBoxes[i].deinit(gpa);
     }
 }
@@ -50,15 +51,15 @@ pub const Part = enum {
 
     fn meshes(part: Part) []c.Mesh {
         const m = part.model();
-        return m.meshes[0..@intCast(m.meshCount)];
+        return m.internal.meshes[0..@intCast(m.internal.meshCount)];
     }
 
-    fn model(part: Part) c.Model {
+    fn model(part: Part) d.Model {
         const i: usize = @intFromEnum(part);
         return models[i];
     }
 
-    fn modelBounds(part: Part) c.BoundingBox {
+    fn modelBounds(part: Part) d.BoundingBox {
         const i: usize = @intFromEnum(part);
         return model_bounds[i];
     }
@@ -68,26 +69,36 @@ pub const Part = enum {
         return buildBoxes[i];
     }
 
-    pub fn rayCollision(part: Part, placement: Placement, ray: c.Ray) c.RayCollision {
-        const inv = placement.inv().mat(1);
-        const ray_ = c.Ray{ .position = c.Vector3Transform(ray.position, inv), .direction = c.Vector3Rotate(ray.direction, inv) };
-        var res = c.RayCollision{ .hit = false };
-        if (c.GetRayCollisionBox(ray_, part.modelBounds()).hit) {
+    pub fn rayCollision(part: Part, placement: Placement, ray: d.Ray) ?d.Ray.Hit {
+        const inv = placement.inv().transform(1);
+        const ray_inv = d.Ray{
+            .pos = inv.apply(ray.pos),
+            .dir = inv.rotate(ray.dir),
+        };
+        var res: ?d.Ray.Hit = null;
+        if (ray_inv.boundingBox(part.modelBounds())) |_| {
             for (part.meshes()) |mesh| {
-                const r = c.GetRayCollisionMesh(ray_, mesh, comptime c.MatrixIdentity());
-                if (r.hit and (!res.hit or r.distance < res.distance))
-                    res = r;
+                if (ray_inv.mesh(.{ .internal = mesh })) |hit| {
+                    if (res == null or hit.dist < res.?.dist)
+                        res = hit;
+                }
             }
         }
         return res;
     }
 
     pub fn blueprint(part: Part) void {
-        const offset = c.toVector3(@splat(0));
         const i: usize = @intFromEnum(part);
-        const scale = BuildBox.scale + anti_zfighting;
-        models[i].transform = (Placement{}).mat(1.0 / scale);
-        c.DrawModel(models[i], offset, scale, c.ColorAlpha(c.SKYBLUE, 0.25));
+        const scale = BuildBox.scale * (1.0 + anti_zfighting);
+
+        renderer.addToBuffer(
+            models[i],
+            c.ColorAlpha(c.SKYBLUE, 0.25),
+            .{
+                .pos = @splat(0),
+                .rot = .diag(@splat(scale)),
+            },
+        );
     }
 
     pub const RenderOptions = struct {
@@ -103,24 +114,23 @@ pub const Part = enum {
                 .default => 1.0,
                 .buildbox => 1.0 / @as(comptime_float, BuildBox.scale),
             });
-        const scale_mat = c.MatrixScale(scale, scale, scale);
+        const scale_mat = d.Mat3.diag(@splat(scale));
         switch (options.mode) {
             .default => {
                 const model_ = part.model();
-                const transform = c.MatrixMultiply(scale_mat, placement.mat(1));
+                var transform = placement.transform(1);
+                transform.rot = transform.rot.mul(scale_mat);
                 renderer.addToBuffer(model_, color_, transform);
             },
             .buildbox => {
-                const mat_part = placement.mat(1);
+                const mat_part = placement.transform(1);
                 const model_ = Part.cube.model();
                 const bb = part.buildBox();
                 var iter = bb.bounds.min;
                 while (true) : (if (!bb.bounds.next(&iter)) break) {
                     if (bb.at(iter)) {
-                        const transform = c.MatrixMultiply(scale_mat, c.MatrixMultiply(
-                            (Placement{ .position = iter, .rotation = .none }).mat(scale),
-                            mat_part,
-                        ));
+                        var transform = mat_part.add((Placement{ .position = iter, .rotation = .none }).transform(scale));
+                        transform.rot = transform.rot.mul(scale_mat);
                         renderer.addToBuffer(model_, color_, transform);
                     }
                 }

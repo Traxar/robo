@@ -1,7 +1,8 @@
-const c = @import("c.zig");
+const d = @import("c.zig");
+const c = d.c;
 const Allocator = @import("std").mem.Allocator;
 const Bind = @import("bind.zig").Bind;
-const Camera = @import("camera.zig").Camera;
+const Camera = d.Camera;
 const Robot = @import("robot.zig").Type(.{
     .mark_collisions = true,
 });
@@ -14,7 +15,7 @@ pub const Editor = struct {
     camera: Camera,
     robot: Robot,
     preview: Preview = .{},
-    blueprint: ?Part = null,
+    blueprint: ?Part = .inner,
     cursor: bool = true,
     render_mode: Part.RenderOptions.Mode = .default,
     gpa: Allocator,
@@ -121,7 +122,7 @@ pub const Editor = struct {
         if (options.binds.up.down()) movement += .{ 0, 0, 1 };
         if (options.binds.down.down()) movement += .{ 0, 0, -1 };
         movement *= @splat(options.speed * frame_time);
-        var rotation = c.fromVector2(c.GetMouseDelta());
+        var rotation = d.fromVector2(c.GetMouseDelta());
         rotation *= @splat(options.sensitivity);
         editor.camera.update(movement, rotation, .{});
     }
@@ -146,11 +147,11 @@ pub const Editor = struct {
             editor.preview.rotation = editor.preview.rotation.rotate(Placement.Rotation.z90);
         }
 
-        const ray: c.Ray =
+        const ray: d.Ray =
             if (editor.cursor)
-                c.GetScreenToWorldRay(c.GetMousePosition(), editor.camera.raylib(options.camera))
+                editor.camera.rayFromScreen(d.Window.mousePosition())
             else
-                c.CameraRay(editor.camera.raylib(options.camera));
+                editor.camera.ray();
         const ray_result = editor.robot.rayCollision(ray);
         editor.preview.target = ray_result.part_index;
 
@@ -168,10 +169,10 @@ pub const Editor = struct {
         }
     }
 
-    pub fn render(editor: Editor, options: Options) void {
+    pub fn render(editor: Editor) void {
         { // 3d
-            c.BeginMode3D(editor.camera.raylib(options.camera));
-            defer c.EndMode3D();
+            editor.camera.beginRender();
+            defer editor.camera.endRender();
             editor.robot.render(editor.render_mode);
             if (editor.preview.placement) |placement|
                 editor.preview.part.render(
@@ -204,23 +205,23 @@ pub const Editor = struct {
         const size_border_v = size_v + @as(V, @splat(border * 2));
 
         c.DrawRectangleV(
-            c.toVector2(center - size_border_h * @as(V, @splat(0.5))),
-            c.toVector2(size_border_h),
+            d.toVector2(center - size_border_h * @as(V, @splat(0.5))),
+            d.toVector2(size_border_h),
             border_color,
         );
         c.DrawRectangleV(
-            c.toVector2(center - size_border_v * @as(V, @splat(0.5))),
-            c.toVector2(size_border_v),
+            d.toVector2(center - size_border_v * @as(V, @splat(0.5))),
+            d.toVector2(size_border_v),
             border_color,
         );
         c.DrawRectangleV(
-            c.toVector2(center - size_h * @as(V, @splat(0.5))),
-            c.toVector2(size_h),
+            d.toVector2(center - size_h * @as(V, @splat(0.5))),
+            d.toVector2(size_h),
             color,
         );
         c.DrawRectangleV(
-            c.toVector2(center - size_v * @as(V, @splat(0.5))),
-            c.toVector2(size_v),
+            d.toVector2(center - size_v * @as(V, @splat(0.5))),
+            d.toVector2(size_v),
             color,
         );
     }

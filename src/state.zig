@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const c = @import("c.zig");
+const d = @import("c.zig");
+const c = d.c;
 const Bind = @import("bind.zig").Bind;
 const Editor = @import("editor.zig").Editor;
 const Menu = @import("menu.zig").Menu;
@@ -19,15 +20,16 @@ pub const State = struct {
     allocator: Allocator,
     options: Options = .{},
     mode: Mode = .edit,
-    editor: Editor,
+    editor: Editor = undefined,
     menu: Menu = .{},
     frame_start: i64 = 0,
 
     pub fn init(gpa: Allocator) !State {
         var state = State{
             .allocator = gpa,
-            .editor = try Editor.init(gpa, 2000),
         };
+        state.editor = try Editor.init(gpa, 2000);
+        errdefer state.editor.deinit();
         state.editor.camera = .{ .position = .{ 10, 10, 10 } };
         state.editor.camera.target(.{ 0, 0, 0 });
         return state;
@@ -39,7 +41,7 @@ pub const State = struct {
 
     pub fn run(state: *State) !bool {
         state.frame_start = std.time.microTimestamp();
-        if (c.WindowShouldClose()) return false;
+        if (d.Window.shouldClose()) return false;
         if (Bind.esc.pressed()) {
             state.menu.enabled = !state.menu.enabled;
         }
@@ -65,7 +67,7 @@ pub const State = struct {
         switch (state.mode) {
             .close => {},
             .edit => {
-                state.editor.render(state.options.editor);
+                state.editor.render();
             },
         }
         Menu.show(state);
