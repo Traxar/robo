@@ -15,7 +15,7 @@ pub const Editor = struct {
     camera: Camera,
     robot: Robot,
     preview: Preview = .{},
-    blueprint: ?Part = .inner,
+    blueprint: ?Part = null,
     cursor: bool = true,
     render_mode: Part.RenderOptions.Mode = .default,
     gpa: Allocator,
