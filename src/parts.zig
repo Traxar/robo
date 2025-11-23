@@ -49,9 +49,9 @@ pub const Part = enum {
     prism_concave,
     tetra,
 
-    fn meshes(part: Part) []c.Mesh {
+    fn meshes(part: Part) []d.Mesh {
         const m = part.model();
-        return m.internal.meshes[0..@intCast(m.internal.meshCount)];
+        return @ptrCast(m.internal.meshes[0..@intCast(m.internal.meshCount)]);
     }
 
     fn model(part: Part) d.Model {
@@ -78,7 +78,7 @@ pub const Part = enum {
         var res: ?d.Ray.Hit = null;
         if (ray_inv.boundingBox(part.modelBounds())) |_| {
             for (part.meshes()) |mesh| {
-                if (ray_inv.mesh(.{ .internal = mesh })) |hit| {
+                if (ray_inv.mesh(mesh)) |hit| {
                     if (res == null or hit.dist < res.?.dist)
                         res = hit;
                 }
