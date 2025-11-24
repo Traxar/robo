@@ -1,5 +1,4 @@
 const d = @import("c.zig");
-const c = d.c;
 const State = @import("state.zig").State;
 const Options = State.Options;
 
@@ -14,7 +13,7 @@ pub const Menu = struct {
 
     pub fn show(state: *State) void {
         if (!state.menu.enabled) return;
-        if (c.IsCursorHidden()) c.EnableCursor();
+        if (d.Cursor.hidden()) d.Cursor.enable();
         switch (state.menu.page) {
             .main => main(state),
             .settings => settings(state),
@@ -22,66 +21,66 @@ pub const Menu = struct {
     }
 
     fn main(state: *State) void {
-        const w: f32 = @floatFromInt(c.GetRenderWidth());
-        const h: f32 = @floatFromInt(c.GetRenderHeight());
+        const w: f32 = @floatFromInt(d.Window.width());
+        const h: f32 = @floatFromInt(d.Window.height());
 
-        if (c.GuiButton(.{
+        if (d.Gui.button(.{
             .width = 0.2 * w,
             .height = 0.05 * h,
             .x = 0.4 * w,
             .y = 0.4 * h,
-        }, "Continue") == 1) {
+        }, "Continue")) {
             state.menu.enabled = false;
         }
 
-        if (state.mode != .edit) c.GuiDisable();
-        if (c.GuiButton(.{
+        if (state.mode != .edit) d.Gui.disable();
+        if (d.Gui.button(.{
             .width = 0.2 * w,
             .height = 0.05 * h,
             .x = 0.4 * w,
             .y = 0.46 * h,
-        }, "Save") == 1) {
+        }, "Save")) {
             state.editor.robot.save() catch {};
         }
-        if (state.mode != .edit) c.GuiEnable();
+        if (state.mode != .edit) d.Gui.enable();
 
-        if (c.GuiButton(.{
+        if (d.Gui.button(.{
             .width = 0.2 * w,
             .height = 0.05 * h,
             .x = 0.4 * w,
             .y = 0.52 * h,
-        }, "Settings") == 1) {
+        }, "Settings")) {
             state.menu.page = .settings;
         }
 
-        if (c.GuiButton(.{
+        if (d.Gui.button(.{
             .width = 0.2 * w,
             .height = 0.05 * h,
             .x = 0.4 * w,
             .y = 0.58 * h,
-        }, "Quit") == 1) {
+        }, "Quit")) {
             state.mode = .close;
             state.menu.enabled = false;
         }
     }
 
     fn settings(state: *State) void {
-        const w: f32 = @floatFromInt(c.GetRenderWidth());
-        const h: f32 = @floatFromInt(c.GetRenderHeight());
+        const w: f32 = @floatFromInt(d.Window.width());
+        const h: f32 = @floatFromInt(d.Window.height());
 
-        _ = c.GuiPanel(.{
+        d.Gui.panel(.{
             .width = 0.2 * w,
             .height = 0.11 * h,
             .x = 0.4 * w,
             .y = 0.4 * h,
         }, "TODO");
 
-        if (c.GuiButton(.{
+        if (d.Gui.button(.{
             .width = 0.2 * w,
             .height = 0.05 * h,
             .x = 0.4 * w,
             .y = 0.52 * h,
-        }, "Back") == 1) {
+        }, "Back")) {
             state.menu.page = .main;
         }
     }

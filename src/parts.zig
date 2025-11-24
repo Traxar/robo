@@ -1,7 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const d = @import("c.zig");
-const c = d.c;
 const Placement = @import("placement.zig").Placement;
 const Robot = @import("robot.zig").Type(.{ .mark_collisions = false });
 const BuildBox = @import("buildbox.zig").BuildBox;
@@ -93,7 +92,7 @@ pub const Part = enum {
 
         renderer.addToBuffer(
             models[i],
-            c.ColorAlpha(c.SKYBLUE, 0.25),
+            d.Color.lightblue.alpha(0.25),
             .{
                 .pos = @splat(0),
                 .rot = .diag(@splat(scale)),
@@ -107,8 +106,8 @@ pub const Part = enum {
         mode: Mode = .buildbox,
     };
 
-    pub fn render(part: Part, placement: Placement, color: c.Color, options: RenderOptions) void {
-        const color_ = if (options.preview) c.ColorAlpha(color, 0.25) else color;
+    pub fn render(part: Part, placement: Placement, color: d.Color, options: RenderOptions) void {
+        const color_ = if (options.preview) color.alpha(0.25) else color;
         const scale = @as(f32, if (options.preview) 1.0 + anti_zfighting else 1.0) *
             @as(f32, switch (options.mode) {
                 .default => 1.0,

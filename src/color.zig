@@ -1,4 +1,4 @@
-const c = @import("c.zig").c;
+const c = @import("c.zig");
 
 pub const Color = enum {
     white,
@@ -16,24 +16,13 @@ pub const Color = enum {
     gray,
     lightgray,
 
-    pub const collision = c.MAROON;
+    pub const collision = c.Color.maroon;
 
-    pub fn raylib(color: Color) c.Color {
+    pub fn rgba(color: Color) c.Color {
         return switch (color) {
-            .white => c.RAYWHITE,
-            .yellow => c.YELLOW,
-            .orange => c.ORANGE,
-            .red => c.RED,
-            .purple => c.PURPLE,
-            .blue => c.BLUE,
-            .lightblue => c.SKYBLUE,
-            .lime => c.LIME,
-            .green => c.GREEN,
-            .beige => c.BEIGE,
-            .brown => c.BROWN,
-            .black => c.Color{ .a = 255, .r = 10, .g = 10, .b = 10 },
-            .gray => c.GRAY,
-            .lightgray => c.LIGHTGRAY,
+            .white => .raywhite,
+            .black => c.Color{ .r = 10, .g = 10, .b = 10 },
+            inline else => |col| @field(c.Color, @tagName(col)),
         };
     }
 };

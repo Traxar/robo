@@ -1,7 +1,6 @@
 const d = @import("c.zig");
-const c = d.c;
+const Bind = d.Input.Digital;
 const Allocator = @import("std").mem.Allocator;
-const Bind = @import("bind.zig").Bind;
 const Camera = d.Camera;
 const Robot = @import("robot.zig").Type(.{
     .mark_collisions = true,
@@ -40,22 +39,22 @@ pub const Editor = struct {
         binds: Binds = .{},
 
         pub const Binds = struct {
-            forward: Bind = .{ .key = c.KEY_W },
-            left: Bind = .{ .key = c.KEY_A },
-            back: Bind = .{ .key = c.KEY_S },
-            right: Bind = .{ .key = c.KEY_D },
-            up: Bind = .{ .key = c.KEY_SPACE },
-            down: Bind = .{ .key = c.KEY_LEFT_SHIFT },
-            place: Bind = .{ .mouse = c.MOUSE_BUTTON_LEFT },
-            remove: Bind = .{ .mouse = c.MOUSE_BUTTON_RIGHT },
-            pick: Bind = .{ .mouse = c.MOUSE_BUTTON_MIDDLE },
-            next_part: Bind = .{ .key = c.KEY_Q },
-            next_color: Bind = .{ .key = c.KEY_C },
-            next_render_mode: Bind = .{ .key = c.KEY_B },
-            rotate_ccw: Bind = .{ .key = c.KEY_R },
-            rotate_cw: Bind = .{},
-            mirror: Bind = .{ .key = c.KEY_X },
-            toggle_cursor: Bind = .{ .key = c.KEY_TAB },
+            forward: Bind = .{ .key = .w },
+            left: Bind = .{ .key = .a },
+            back: Bind = .{ .key = .s },
+            right: Bind = .{ .key = .d },
+            up: Bind = .{ .key = .space },
+            down: Bind = .{ .key = .left_shift },
+            place: Bind = .{ .mouse = .left },
+            remove: Bind = .{ .mouse = .right },
+            pick: Bind = .{ .mouse = .middle },
+            next_part: Bind = .{ .key = .q },
+            next_color: Bind = .{ .key = .c },
+            next_render_mode: Bind = .{ .key = .b },
+            rotate_ccw: Bind = .{ .key = .r },
+            rotate_cw: Bind = .{ .key = .dead },
+            mirror: Bind = .{ .key = .x },
+            toggle_cursor: Bind = .{ .key = .tab },
         };
     };
 
@@ -77,10 +76,10 @@ pub const Editor = struct {
         if (options.binds.toggle_cursor.pressed()) {
             editor.cursor = !editor.cursor;
         }
-        if (editor.cursor and c.IsCursorHidden()) {
-            c.EnableCursor();
-        } else if (!editor.cursor and !c.IsCursorHidden()) {
-            c.DisableCursor();
+        if (editor.cursor and d.Cursor.hidden()) {
+            d.Cursor.enable();
+        } else if (!editor.cursor and !d.Cursor.hidden()) {
+            d.Cursor.disable();
         }
 
         if (!editor.cursor) {
@@ -113,16 +112,19 @@ pub const Editor = struct {
     }
 
     fn updateCamera(editor: *Editor, options: Options) void {
-        const frame_time = c.GetFrameTime();
+        const frame_time = d.Fps.frameTime();
         var movement: @Vector(3, f32) = @splat(0);
-        if (options.binds.forward.down()) movement += .{ 0, 1, 0 };
-        if (options.binds.left.down()) movement += .{ -1, 0, 0 };
-        if (options.binds.back.down()) movement += .{ 0, -1, 0 };
-        if (options.binds.right.down()) movement += .{ 1, 0, 0 };
-        if (options.binds.up.down()) movement += .{ 0, 0, 1 };
-        if (options.binds.down.down()) movement += .{ 0, 0, -1 };
+        if (options.binds.forward.isDown()) movement += .{ 0, 1, 0 };
+        if (options.binds.left.isDown()) movement += .{ -1, 0, 0 };
+        if (options.binds.back.isDown()) movement += .{ 0, -1, 0 };
+        if (options.binds.right.isDown()) movement += .{ 1, 0, 0 };
+        if (options.binds.up.isDown()) movement += .{ 0, 0, 1 };
+        if (options.binds.down.isDown()) movement += .{ 0, 0, -1 };
         movement *= @splat(options.speed * frame_time);
-        var rotation = d.fromVector2(c.GetMouseDelta());
+        var rotation: d.Vec2 = .{
+            d.Input.Analog.Mouse.right.value(),
+            d.Input.Analog.Mouse.forward.value(),
+        };
         rotation *= @splat(options.sensitivity);
         editor.camera.update(movement, rotation, .{});
     }
@@ -140,10 +142,10 @@ pub const Editor = struct {
         if (options.binds.mirror.pressed()) {
             editor.preview.rotation = editor.preview.rotation.rotate(Placement.Rotation.mirror);
         }
-        if (c.GetMouseWheelMove() > 0 or options.binds.rotate_cw.pressed()) {
+        if (d.Input.Analog.Mouse.wheel.value() > 0 or options.binds.rotate_cw.pressed()) {
             editor.preview.rotation = editor.preview.rotation.rotate(Placement.Rotation.z270);
         }
-        if (c.GetMouseWheelMove() < 0 or options.binds.rotate_ccw.pressed()) {
+        if (d.Input.Analog.Mouse.wheel.value() < 0 or options.binds.rotate_ccw.pressed()) {
             editor.preview.rotation = editor.preview.rotation.rotate(Placement.Rotation.z90);
         }
 
@@ -180,7 +182,7 @@ pub const Editor = struct {
                     if (editor.preview.collides)
                         Color.collision
                     else
-                        editor.preview.color.raylib(),
+                        editor.preview.color.rgba(),
                     .{
                         .mode = editor.render_mode,
                         .preview = true,
@@ -194,34 +196,34 @@ pub const Editor = struct {
     }
 
     fn crosshair(editor: Editor) void {
-        const V = @Vector(2, f32);
+        const V = d.Vec2;
         const size_h = V{ 11, 1 };
         const size_v = @shuffle(f32, size_h, undefined, @Vector(2, i32){ 1, 0 });
         const border = 1;
-        const color = if (editor.preview.collides) Color.collision else c.BLACK;
-        const border_color = c.WHITE;
-        const center = V{ @floatFromInt(c.GetRenderWidth()), @floatFromInt(c.GetRenderHeight()) } * @as(V, @splat(0.5));
+        const color = if (editor.preview.collides) Color.collision else Color.black.rgba();
+        const border_color = d.Color.white;
+        const center = V{ @floatFromInt(d.Window.width()), @floatFromInt(d.Window.height()) } * @as(V, @splat(0.5));
         const size_border_h = size_h + @as(V, @splat(border * 2));
         const size_border_v = size_v + @as(V, @splat(border * 2));
 
-        c.DrawRectangleV(
-            d.toVector2(center - size_border_h * @as(V, @splat(0.5))),
-            d.toVector2(size_border_h),
+        d.Window.Draw.rect(
+            center - size_border_h * @as(V, @splat(0.5)),
+            size_border_h,
             border_color,
         );
-        c.DrawRectangleV(
-            d.toVector2(center - size_border_v * @as(V, @splat(0.5))),
-            d.toVector2(size_border_v),
+        d.Window.Draw.rect(
+            center - size_border_v * @as(V, @splat(0.5)),
+            size_border_v,
             border_color,
         );
-        c.DrawRectangleV(
-            d.toVector2(center - size_h * @as(V, @splat(0.5))),
-            d.toVector2(size_h),
+        d.Window.Draw.rect(
+            center - size_h * @as(V, @splat(0.5)),
+            size_h,
             color,
         );
-        c.DrawRectangleV(
-            d.toVector2(center - size_v * @as(V, @splat(0.5))),
-            d.toVector2(size_v),
+        d.Window.Draw.rect(
+            center - size_v * @as(V, @splat(0.5)),
+            size_v,
             color,
         );
     }

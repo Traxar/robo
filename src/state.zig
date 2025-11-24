@@ -1,8 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const d = @import("c.zig");
-const c = d.c;
-const Bind = @import("bind.zig").Bind;
 const Editor = @import("editor.zig").Editor;
 const Menu = @import("menu.zig").Menu;
 
@@ -42,7 +40,7 @@ pub const State = struct {
     pub fn run(state: *State) !bool {
         state.frame_start = std.time.microTimestamp();
         if (d.Window.shouldClose()) return false;
-        if (Bind.esc.pressed()) {
+        if (d.Input.Digital.Key.escape.pressed()) {
             state.menu.enabled = !state.menu.enabled;
         }
         if (!state.menu.enabled) {
@@ -60,9 +58,9 @@ pub const State = struct {
     }
 
     fn render(state: *State) void {
-        c.BeginDrawing();
-        defer c.EndDrawing();
-        c.ClearBackground(c.RAYWHITE);
+        d.Window.Draw.begin();
+        defer d.Window.Draw.end();
+        d.Window.Draw.clear(.raywhite);
 
         switch (state.mode) {
             .close => {},
@@ -73,10 +71,10 @@ pub const State = struct {
         Menu.show(state);
 
         if (state.options.show_fps) {
-            var text_buffer = (" " ** 20).*;
+            var text_buffer: [20]u8 = @splat(' ');
             const frame_time = @as(f32, @floatFromInt(@max(1, std.time.microTimestamp() - state.frame_start))) * 1.0e-6;
-            const fps_text = std.fmt.bufPrint(text_buffer[0..], "FPS: {} ({})", .{ c.GetFPS(), @as(i32, @intFromFloat(@floor(1.0 / frame_time))) }) catch return;
-            c.DrawText(fps_text.ptr, 10, 10, 20, c.LIME);
+            const fps_text = std.fmt.bufPrint(text_buffer[0..], "FPS: {} ({})", .{ d.Fps.get(), @as(i32, @intFromFloat(@floor(1.0 / frame_time))) }) catch return;
+            d.Window.Draw.text(fps_text.ptr, 10, 10, 20, .green);
         }
     }
 };

@@ -45,7 +45,7 @@ pub fn drawBuffer() void {
     //? instancing shader needed
     for (0..@intCast(model.internal.meshCount)) |i| {
         drawMeshInstanced(
-            model.internal.meshes[i],
+            .{ .internal = model.internal.meshes[i] },
             model.internal.materials[@intCast(model.internal.meshMaterial[i])],
             buffer[0..length],
         );
@@ -53,7 +53,7 @@ pub fn drawBuffer() void {
     length = 0;
 }
 
-pub fn addToBuffer(model_: d.Model, color: c.Color, transform: d.Transform) void {
+pub fn addToBuffer(model_: d.Model, color: d.Color, transform: d.Transform) void {
     if (!std.meta.eql(model_, model)) drawBuffer();
     if (length == 0) {
         model = model_;
@@ -82,7 +82,7 @@ pub fn addToBuffer(model_: d.Model, color: c.Color, transform: d.Transform) void
     if (length == buffer_size) drawBuffer();
 }
 
-fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, renderInfos: []RenderInfo) void {
+fn drawMeshInstanced(mesh: d.Mesh, material: c.Material, renderInfos: []RenderInfo) void {
     // Bind shader program
     c.rlEnableShader(material.shader.id);
 
@@ -116,7 +116,7 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, renderInfos: []RenderIn
         c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_PROJECTION], matProjection);
 
     // Enable mesh VAO to attach new buffer
-    _ = c.rlEnableVertexArray(mesh.vaoId);
+    _ = c.rlEnableVertexArray(mesh.internal.vaoId);
 
     d.updateVertexBuffer(partVboId, RenderInfo, renderInfos, 0);
 
@@ -169,28 +169,28 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, renderInfos: []RenderIn
 
     // Try binding vertex array objects (VAO)
     // or use VBOs if not possible
-    if (!c.rlEnableVertexArray(mesh.vaoId)) {
+    if (!c.rlEnableVertexArray(mesh.internal.vaoId)) {
         // Bind mesh VBO data: vertex position (shader-location = 0)
-        c.rlEnableVertexBuffer(mesh.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION]);
+        c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION]);
         c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_POSITION]), 3, c.RL_FLOAT, false, 0, 0);
         c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_POSITION]));
 
         // Bind mesh VBO data: vertex texcoords (shader-location = 1)
-        c.rlEnableVertexBuffer(mesh.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD]);
+        c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD]);
         c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD01]), 2, c.RL_FLOAT, false, 0, 0);
         c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD01]));
 
         if (material.shader.locs[c.SHADER_LOC_VERTEX_NORMAL] != -1) {
             // Bind mesh VBO data: vertex normals (shader-location = 2)
-            c.rlEnableVertexBuffer(mesh.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL]);
+            c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL]);
             c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_NORMAL]), 3, c.RL_FLOAT, false, 0, 0);
             c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_NORMAL]));
         }
 
         // Bind mesh VBO data: vertex colors (shader-location = 3, if available)
         if (material.shader.locs[c.SHADER_LOC_VERTEX_COLOR] != -1) {
-            if (mesh.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_COLOR] != 0) {
-                c.rlEnableVertexBuffer(mesh.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_COLOR]);
+            if (mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_COLOR] != 0) {
+                c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_COLOR]);
                 c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR]), 4, c.RL_UNSIGNED_BYTE, true, 0, 0);
                 c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR]));
             } else {
@@ -204,19 +204,19 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, renderInfos: []RenderIn
 
         // Bind mesh VBO data: vertex tangents (shader-location = 4, if available)
         if (material.shader.locs[c.SHADER_LOC_VERTEX_TANGENT] != -1) {
-            c.rlEnableVertexBuffer(mesh.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TANGENT]);
+            c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TANGENT]);
             c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TANGENT]), 4, c.RL_FLOAT, false, 0, 0);
             c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TANGENT]));
         }
 
         // Bind mesh VBO data: vertex texcoords2 (shader-location = 5, if available)
         if (material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD02] != -1) {
-            c.rlEnableVertexBuffer(mesh.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD2]);
+            c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD2]);
             c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD02]), 2, c.RL_FLOAT, false, 0, 0);
             c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD02]));
         }
 
-        if (mesh.indices != null) c.rlEnableVertexBufferElement(mesh.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES]);
+        if (mesh.internal.indices != null) c.rlEnableVertexBufferElement(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES]);
     }
 
     // Calculate model-view-projection matrix (MVP)
@@ -226,7 +226,7 @@ fn drawMeshInstanced(mesh: c.Mesh, material: c.Material, renderInfos: []RenderIn
     c.rlSetUniformMatrix(material.shader.locs[c.SHADER_LOC_MATRIX_MVP], matModelViewProjection);
 
     // Draw mesh instanced
-    c.rlDrawVertexArrayInstanced(0, mesh.vertexCount, @intCast(renderInfos.len));
+    c.rlDrawVertexArrayInstanced(0, mesh.internal.vertexCount, @intCast(renderInfos.len));
 
     // Unbind all bound texture maps
     for (0..12) |i_| {
