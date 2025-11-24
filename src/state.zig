@@ -71,9 +71,9 @@ pub const State = struct {
         Menu.show(state);
 
         if (state.options.show_fps) {
-            var text_buffer: [20]u8 = @splat(' ');
+            var text_buffer: [32]u8 = @splat(' ');
             const frame_time = @as(f32, @floatFromInt(@max(1, std.time.microTimestamp() - state.frame_start))) * 1.0e-6;
-            const fps_text = std.fmt.bufPrint(text_buffer[0..], "FPS: {} ({})", .{ d.Fps.get(), @as(i32, @intFromFloat(@floor(1.0 / frame_time))) }) catch return;
+            const fps_text = std.fmt.bufPrintZ(text_buffer[0..], "FPS: {} ({})", .{ d.Fps.get(), @as(i32, @intFromFloat(@floor(1.0 / frame_time))) }) catch return;
             d.Window.Draw.text(fps_text.ptr, 10, 10, 20, .green);
         }
     }
