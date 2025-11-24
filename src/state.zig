@@ -20,7 +20,7 @@ pub const State = struct {
     mode: Mode = .edit,
     editor: Editor = undefined,
     menu: Menu = .{},
-    frame_start: i64 = 0,
+    frame_start: i128 = 0,
 
     pub fn init(gpa: Allocator) !State {
         var state = State{
@@ -38,7 +38,7 @@ pub const State = struct {
     }
 
     pub fn run(state: *State) !bool {
-        state.frame_start = std.time.microTimestamp();
+        state.frame_start = std.time.nanoTimestamp();
         if (d.Window.shouldClose()) return false;
         if (d.Input.Digital.Key.escape.pressed()) {
             state.menu.enabled = !state.menu.enabled;
@@ -72,7 +72,7 @@ pub const State = struct {
 
         if (state.options.show_fps) {
             var text_buffer: [32]u8 = @splat(' ');
-            const frame_time = @as(f32, @floatFromInt(@max(1, std.time.microTimestamp() - state.frame_start))) * 1.0e-6;
+            const frame_time = @as(f32, @floatFromInt(@max(1, std.time.nanoTimestamp() - state.frame_start))) * 1.0e-9;
             const fps_text = std.fmt.bufPrintZ(text_buffer[0..], "FPS: {} ({})", .{ d.Fps.get(), @as(i32, @intFromFloat(@floor(1.0 / frame_time))) }) catch return;
             d.Window.Draw.text(fps_text.ptr, 10, 10, 20, .green);
         }
