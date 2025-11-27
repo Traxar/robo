@@ -1,4 +1,5 @@
-const math = @import("std").math;
+const std = @import("std");
+const math = std.math;
 
 pub const c = @cImport({
     @cInclude("raylib.h");
