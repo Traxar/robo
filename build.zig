@@ -29,6 +29,7 @@ pub fn build(b: *std.Build) void {
     const raylib_dep = b.dependency("raylib", .{
         .target = target,
         .optimize = optimize,
+        .opengl_version = .gl_4_3,
     });
     const raylib = raylib_dep.artifact("raylib");
     exe_mod.linkLibrary(raylib);
