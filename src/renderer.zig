@@ -1,17 +1,16 @@
 const std = @import("std");
 const assert = std.debug.assert;
-const d = @import("c.zig");
-const c = d.c;
-const loadVertexBuffer = @import("c.zig").loadVertexBuffer;
+const o = @import("o.zig");
+const c = o.c;
 
 const buffer_size = 1 << 11;
 var buffer: [buffer_size]RenderInfo = undefined;
 var length: usize = 0;
-var model: d.Model = undefined;
+var model: o.Model = undefined;
 
 var partVboId: c_uint = undefined;
 
-pub var shader: d.Shader = undefined;
+pub var shader: o.Shader = undefined;
 
 const RenderColor = [4]f32;
 const RenderTransform = [12]f32;
@@ -31,7 +30,7 @@ pub fn init() void {
     shader.internal.locs[c.SHADER_LOC_MATRIX_MVP] = shader.locationUniform("mvp");
     shader.internal.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1] = shader.locationInput("instanceColor");
 
-    partVboId = d.loadVertexBuffer(RenderInfo, buffer[0..buffer_size], false);
+    partVboId = o.loadVertexBuffer(RenderInfo, buffer[0..buffer_size], false);
 }
 
 pub fn deinit() void {
@@ -53,7 +52,7 @@ pub fn drawBuffer() void {
     length = 0;
 }
 
-pub fn addToBuffer(model_: d.Model, color: d.Color, transform: d.Transform) void {
+pub fn addToBuffer(model_: o.Model, color: o.Color, transform: o.Transform) void {
     if (!std.meta.eql(model_, model)) drawBuffer();
     if (length == 0) {
         model = model_;
@@ -73,16 +72,16 @@ pub fn addToBuffer(model_: d.Model, color: d.Color, transform: d.Transform) void
         transform.pos[2],
     };
     buffer[length].color = .{
-        @as(f32, @floatFromInt(color.r)) / 255.0,
-        @as(f32, @floatFromInt(color.g)) / 255.0,
-        @as(f32, @floatFromInt(color.b)) / 255.0,
-        @as(f32, @floatFromInt(color.a)) / 255.0,
+        @as(f32, @floatFromInt(color.rgba[0])) / 255.0,
+        @as(f32, @floatFromInt(color.rgba[1])) / 255.0,
+        @as(f32, @floatFromInt(color.rgba[2])) / 255.0,
+        @as(f32, @floatFromInt(color.rgba[3])) / 255.0,
     };
     length += 1;
     if (length == buffer_size) drawBuffer();
 }
 
-fn drawMeshInstanced(mesh: d.Mesh, material: c.Material, renderInfos: []RenderInfo) void {
+fn drawMeshInstanced(mesh: o.Mesh, material: c.Material, renderInfos: []RenderInfo) void {
     // Bind shader program
     c.rlEnableShader(material.shader.id);
 
@@ -118,18 +117,18 @@ fn drawMeshInstanced(mesh: d.Mesh, material: c.Material, renderInfos: []RenderIn
     // Enable mesh VAO to attach new buffer
     _ = c.rlEnableVertexArray(mesh.internal.vaoId);
 
-    d.updateVertexBuffer(partVboId, RenderInfo, renderInfos, 0);
+    o.updateVertexBuffer(partVboId, RenderInfo, renderInfos, 0);
 
     // Instances transformation matrices are sent to shader attribute location: SHADER_LOC_VERTEX_INSTANCE_TX
     for (0..4) |i_| {
         const i: c_int = @intCast(i_);
         c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i));
-        d.setVertexAttribute(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i, @Vector(3, f32), 16, 3 * i_);
+        o.setVertexAttribute(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i, @Vector(3, f32), 16, 3 * i_);
         c.rlSetVertexAttributeDivisor(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX] + i), 1);
     }
 
     c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1]));
-    d.setVertexAttribute(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1], @Vector(4, f32), 16, 12);
+    o.setVertexAttribute(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1], @Vector(4, f32), 16, 12);
     c.rlSetVertexAttributeDivisor(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1]), 1);
 
     c.rlDisableVertexBuffer();

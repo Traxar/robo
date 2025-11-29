@@ -1,6 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const d = @import("c.zig");
+const o = @import("o.zig");
 const Editor = @import("editor.zig").Editor;
 const Menu = @import("menu.zig").Menu;
 
@@ -15,20 +15,19 @@ pub const Options = struct {
 };
 
 pub const State = struct {
-    allocator: Allocator,
     options: Options = .{},
     mode: Mode = .edit,
     editor: Editor = undefined,
     menu: Menu = .{},
-    frame_start: i128 = 0,
 
     pub fn init(gpa: Allocator) !State {
-        var state = State{
-            .allocator = gpa,
-        };
+        var state = State{};
         state.editor = try Editor.init(gpa, 2000);
         errdefer state.editor.deinit();
-        state.editor.camera = .{ .position = .{ 10, 10, 10 } };
+        state.editor.camera = .{
+            .position = .{ 10, 10, 10 },
+            .rotation = undefined,
+        };
         state.editor.camera.target(.{ 0, 0, 0 });
         return state;
     }
@@ -38,9 +37,7 @@ pub const State = struct {
     }
 
     pub fn run(state: *State) !bool {
-        state.frame_start = std.time.nanoTimestamp();
-        if (d.Window.shouldClose()) return false;
-        if (d.Input.Digital.Key.escape.pressed()) {
+        if (o.Input.Digital.Key.escape.pressed()) {
             state.menu.enabled = !state.menu.enabled;
         }
         if (!state.menu.enabled) {
@@ -49,7 +46,7 @@ pub const State = struct {
                     return false;
                 },
                 .edit => {
-                    try state.editor.update(state.options.editor);
+                    try state.editor.update(o.window.frame.dt, state.options.editor);
                 },
             }
         }
@@ -58,10 +55,9 @@ pub const State = struct {
     }
 
     fn render(state: *State) void {
-        d.Window.Draw.begin();
-        defer d.Window.Draw.end();
-        d.Window.Draw.clear(.raywhite);
-
+        o.draw.begin();
+        defer o.draw.end();
+        o.draw.clear(.gray);
         switch (state.mode) {
             .close => {},
             .edit => {
@@ -71,17 +67,16 @@ pub const State = struct {
         Menu.show(state);
 
         if (state.options.show_fps) {
-            var text_buffer: [32]u8 = @splat(' ');
-            const frame_time = @as(f32, @floatFromInt(std.time.nanoTimestamp() -% state.frame_start)) * 1.0e-9;
+            var text_buffer: [1024]u8 = @splat(' ');
             const fps_text = std.fmt.bufPrintZ(
                 text_buffer[0..],
                 "FPS: {} ({})",
                 .{
-                    d.Fps.get(),
-                    @as(i32, @intFromFloat(@floor(1.0 / frame_time))),
+                    @round(1 / o.window.frame.dt),
+                    @round(1 / o.window.frame.min_dt),
                 },
             ) catch return;
-            d.Window.Draw.text(fps_text.ptr, 10, 10, 20, .green);
+            o.draw.text(fps_text.ptr, 10, 10, 20, .orange);
         }
     }
 };

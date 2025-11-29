@@ -2,8 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Part = @import("parts.zig").Part;
 const Placement = @import("placement.zig").Placement;
-const d = @import("c.zig");
-const c = d.c;
+const o = @import("o.zig");
 const Color = @import("color.zig").Color;
 
 pub const Options = struct {
@@ -93,7 +92,7 @@ pub fn Type(options: Options) type {
             return robot;
         }
 
-        pub fn rayCollision(robot: Robot, ray: d.Ray) struct { part_index: ?usize, connection: ?Placement } {
+        pub fn rayCollision(robot: Robot, ray: o.Ray) struct { part_index: ?usize, connection: ?Placement } {
             if (robot.parts.len == 0) return .{
                 .part_index = null,
                 .connection = Placement.connection,

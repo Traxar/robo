@@ -1,14 +1,14 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const d = @import("c.zig");
+const o = @import("o.zig");
 const Placement = @import("placement.zig").Placement;
 const Robot = @import("robot.zig").Type(.{ .mark_collisions = false });
 const BuildBox = @import("buildbox.zig").BuildBox;
 const misc = @import("misc.zig");
 const renderer = @import("renderer.zig");
 
-var models: [@typeInfo(Part).@"enum".fields.len]d.Model = undefined;
-var model_bounds: [@typeInfo(Part).@"enum".fields.len]d.BoundingBox = undefined;
+var models: [@typeInfo(Part).@"enum".fields.len]o.Model = undefined;
+var model_bounds: [@typeInfo(Part).@"enum".fields.len]o.Box = undefined;
 var buildBoxes: [@typeInfo(Part).@"enum".fields.len]BuildBox = undefined;
 
 const anti_zfighting = 0.001;
@@ -48,17 +48,17 @@ pub const Part = enum {
     prism_concave,
     tetra,
 
-    fn meshes(part: Part) []d.Mesh {
+    fn meshes(part: Part) []o.Mesh {
         const m = part.model();
         return @ptrCast(m.internal.meshes[0..@intCast(m.internal.meshCount)]);
     }
 
-    fn model(part: Part) d.Model {
+    fn model(part: Part) o.Model {
         const i: usize = @intFromEnum(part);
         return models[i];
     }
 
-    fn modelBounds(part: Part) d.BoundingBox {
+    fn modelBounds(part: Part) o.Box {
         const i: usize = @intFromEnum(part);
         return model_bounds[i];
     }
@@ -68,14 +68,14 @@ pub const Part = enum {
         return buildBoxes[i];
     }
 
-    pub fn rayCollision(part: Part, placement: Placement, ray: d.Ray) ?d.Ray.Hit {
+    pub fn rayCollision(part: Part, placement: Placement, ray: o.Ray) ?o.Ray.Hit {
         const inv = placement.inv().transform(1);
-        const ray_inv = d.Ray{
+        const ray_inv = o.Ray{
             .pos = inv.apply(ray.pos),
             .dir = inv.rotate(ray.dir),
         };
-        var res: ?d.Ray.Hit = null;
-        if (ray_inv.boundingBox(part.modelBounds())) |_| {
+        var res: ?o.Ray.Hit = null;
+        if (ray_inv.box(part.modelBounds())) |_| {
             for (part.meshes()) |mesh| {
                 if (ray_inv.mesh(mesh)) |hit| {
                     if (res == null or hit.dist < res.?.dist)
@@ -92,7 +92,7 @@ pub const Part = enum {
 
         renderer.addToBuffer(
             models[i],
-            d.Color.lightblue.alpha(0.25),
+            o.Color.lightblue.fade(0.25),
             .{
                 .pos = @splat(0),
                 .rot = .diag(@splat(scale)),
@@ -106,14 +106,14 @@ pub const Part = enum {
         mode: Mode = .buildbox,
     };
 
-    pub fn render(part: Part, placement: Placement, color: d.Color, options: RenderOptions) void {
-        const color_ = if (options.preview) color.alpha(0.25) else color;
+    pub fn render(part: Part, placement: Placement, color: o.Color, options: RenderOptions) void {
+        const color_ = if (options.preview) color.fade(0.25) else color;
         const scale = @as(f32, if (options.preview) 1.0 + anti_zfighting else 1.0) *
             @as(f32, switch (options.mode) {
                 .default => 1.0,
                 .buildbox => 1.0 / @as(comptime_float, BuildBox.scale),
             });
-        const scale_mat = d.Mat3.diag(@splat(scale));
+        const scale_mat = o.Matrix.diag(@splat(scale));
         switch (options.mode) {
             .default => {
                 const model_ = part.model();

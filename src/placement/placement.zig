@@ -1,5 +1,5 @@
 const expect = @import("std").testing.expect;
-const c = @import("../c.zig");
+const o = @import("../o.zig");
 
 pub fn Type(T: type) type {
     return packed struct {
@@ -62,8 +62,8 @@ pub fn Type(T: type) type {
             };
         }
 
-        pub fn transform(a: Placement, scale: f32) c.Transform {
-            var res: c.Transform = .{
+        pub fn transform(a: Placement, scale: f32) o.Transform {
+            var res: o.Transform = .{
                 .rot = .zero,
                 .pos = undefined,
             };
@@ -82,7 +82,7 @@ pub fn Type(T: type) type {
         }
 
         /// return rayCollision of a connection at `placement`
-        pub fn rayCollision(placement: Placement, ray: c.Ray) ?c.Ray.Hit {
+        pub fn rayCollision(placement: Placement, ray: o.Ray) ?o.Ray.Hit {
             const eps = 1e-8;
             const tr_inv = placement.inv().transform(1);
             const dir = tr_inv.rotate(ray.dir);

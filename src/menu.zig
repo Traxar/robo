@@ -1,4 +1,4 @@
-const d = @import("c.zig");
+const o = @import("o.zig");
 const State = @import("state.zig").State;
 const Options = State.Options;
 
@@ -13,7 +13,7 @@ pub const Menu = struct {
 
     pub fn show(state: *State) void {
         if (!state.menu.enabled) return;
-        if (d.Cursor.hidden()) d.Cursor.enable();
+        if (o.cursor.hidden()) o.cursor.enable();
         switch (state.menu.page) {
             .main => main(state),
             .settings => settings(state),
@@ -21,43 +21,35 @@ pub const Menu = struct {
     }
 
     fn main(state: *State) void {
-        const w: f32 = @floatFromInt(d.Window.width());
-        const h: f32 = @floatFromInt(d.Window.height());
+        const sz = o.draw.size();
+        const S = @TypeOf(sz);
 
-        if (d.Gui.button(.{
-            .width = 0.2 * w,
-            .height = 0.05 * h,
-            .x = 0.4 * w,
-            .y = 0.4 * h,
+        if (o.gui.button(.{
+            .min = sz * S{ 0.4, 0.4 },
+            .max = sz * S{ 0.6, 0.45 },
         }, "Continue")) {
             state.menu.enabled = false;
         }
 
-        if (state.mode != .edit) d.Gui.disable();
-        if (d.Gui.button(.{
-            .width = 0.2 * w,
-            .height = 0.05 * h,
-            .x = 0.4 * w,
-            .y = 0.46 * h,
+        if (state.mode != .edit) o.gui.disable();
+        if (o.gui.button(.{
+            .min = sz * S{ 0.4, 0.46 },
+            .max = sz * S{ 0.6, 0.51 },
         }, "Save")) {
             state.editor.robot.save() catch {};
         }
-        if (state.mode != .edit) d.Gui.enable();
+        if (state.mode != .edit) o.gui.enable();
 
-        if (d.Gui.button(.{
-            .width = 0.2 * w,
-            .height = 0.05 * h,
-            .x = 0.4 * w,
-            .y = 0.52 * h,
+        if (o.gui.button(.{
+            .min = sz * S{ 0.4, 0.52 },
+            .max = sz * S{ 0.6, 0.57 },
         }, "Settings")) {
             state.menu.page = .settings;
         }
 
-        if (d.Gui.button(.{
-            .width = 0.2 * w,
-            .height = 0.05 * h,
-            .x = 0.4 * w,
-            .y = 0.58 * h,
+        if (o.gui.button(.{
+            .min = sz * S{ 0.4, 0.58 },
+            .max = sz * S{ 0.6, 0.63 },
         }, "Quit")) {
             state.mode = .close;
             state.menu.enabled = false;
@@ -65,21 +57,17 @@ pub const Menu = struct {
     }
 
     fn settings(state: *State) void {
-        const w: f32 = @floatFromInt(d.Window.width());
-        const h: f32 = @floatFromInt(d.Window.height());
+        const sz = o.draw.size();
+        const S = @TypeOf(sz);
 
-        d.Gui.panel(.{
-            .width = 0.2 * w,
-            .height = 0.11 * h,
-            .x = 0.4 * w,
-            .y = 0.4 * h,
+        o.gui.panel(.{
+            .min = sz * S{ 0.4, 0.4 },
+            .max = sz * S{ 0.6, 0.51 },
         }, "TODO");
 
-        if (d.Gui.button(.{
-            .width = 0.2 * w,
-            .height = 0.05 * h,
-            .x = 0.4 * w,
-            .y = 0.52 * h,
+        if (o.gui.button(.{
+            .min = sz * S{ 0.4, 0.52 },
+            .max = sz * S{ 0.6, 0.57 },
         }, "Back")) {
             state.menu.page = .main;
         }

@@ -1,7 +1,7 @@
-const d = @import("c.zig");
-const Bind = d.Input.Digital;
+const o = @import("o.zig");
+const DigitalInput = o.Input.Digital;
 const Allocator = @import("std").mem.Allocator;
-const Camera = d.Camera;
+const Camera = o.Camera;
 const Robot = @import("robot.zig").Type(.{
     .mark_collisions = true,
 });
@@ -36,25 +36,25 @@ pub const Editor = struct {
         speed: f32 = 5.4,
         sensitivity: f32 = -0.0015,
         camera: Camera.Options = .{},
-        binds: Binds = .{},
+        controls: Controls = .{},
 
-        pub const Binds = struct {
-            forward: Bind = .{ .key = .w },
-            left: Bind = .{ .key = .a },
-            back: Bind = .{ .key = .s },
-            right: Bind = .{ .key = .d },
-            up: Bind = .{ .key = .space },
-            down: Bind = .{ .key = .left_shift },
-            place: Bind = .{ .mouse = .left },
-            remove: Bind = .{ .mouse = .right },
-            pick: Bind = .{ .mouse = .middle },
-            next_part: Bind = .{ .key = .q },
-            next_color: Bind = .{ .key = .c },
-            next_render_mode: Bind = .{ .key = .b },
-            rotate_ccw: Bind = .{ .key = .r },
-            rotate_cw: Bind = .{ .key = .dead },
-            mirror: Bind = .{ .key = .x },
-            toggle_cursor: Bind = .{ .key = .tab },
+        pub const Controls = struct {
+            forward: DigitalInput = .{ .key = .w },
+            left: DigitalInput = .{ .key = .a },
+            back: DigitalInput = .{ .key = .s },
+            right: DigitalInput = .{ .key = .d },
+            up: DigitalInput = .{ .key = .space },
+            down: DigitalInput = .{ .key = .left_shift },
+            place: DigitalInput = .{ .mouse = .left },
+            remove: DigitalInput = .{ .mouse = .right },
+            pick: DigitalInput = .{ .mouse = .middle },
+            next_part: DigitalInput = .{ .key = .q },
+            next_color: DigitalInput = .{ .key = .c },
+            next_render_mode: DigitalInput = .{ .key = .b },
+            rotate_ccw: DigitalInput = .{ .key = .r },
+            rotate_cw: DigitalInput = .{ .key = .dead },
+            mirror: DigitalInput = .{ .key = .x },
+            toggle_cursor: DigitalInput = .{ .key = .tab },
         };
     };
 
@@ -72,37 +72,37 @@ pub const Editor = struct {
         editor.robot.deinit(editor.gpa);
     }
 
-    pub fn update(editor: *Editor, options: Options) !void {
-        if (options.binds.toggle_cursor.pressed()) {
+    pub fn update(editor: *Editor, dt: f32, options: Options) !void {
+        if (options.controls.toggle_cursor.pressed()) {
             editor.cursor = !editor.cursor;
         }
-        if (editor.cursor and d.Cursor.hidden()) {
-            d.Cursor.enable();
-        } else if (!editor.cursor and !d.Cursor.hidden()) {
-            d.Cursor.disable();
+        if (editor.cursor and o.cursor.hidden()) {
+            o.cursor.enable();
+        } else if (!editor.cursor and !o.cursor.hidden()) {
+            o.cursor.disable();
         }
 
         if (!editor.cursor) {
-            editor.updateCamera(options);
+            editor.updateCamera(dt, options);
         }
 
-        if (options.binds.next_render_mode.pressed()) {
+        if (options.controls.next_render_mode.pressed()) {
             editor.render_mode = @enumFromInt(@mod(@intFromEnum(editor.render_mode) +% 1, @typeInfo(Part.RenderOptions.Mode).@"enum".fields.len));
         }
 
         editor.updatePreview(options);
 
-        if (options.binds.place.pressed()) {
+        if (options.controls.place.pressed()) {
             if (editor.preview.placement) |placement|
                 if (!editor.preview.collides)
                     try editor.robot.add(editor.gpa, placement, editor.preview.part, editor.preview.color);
         }
-        if (options.binds.remove.pressed()) {
+        if (options.controls.remove.pressed()) {
             if (editor.preview.target) |index| {
                 editor.robot.remove(index);
             }
         }
-        if (options.binds.pick.pressed()) {
+        if (options.controls.pick.pressed()) {
             if (editor.preview.target) |index| {
                 const target = editor.robot.at(index);
                 editor.preview.part = target.part;
@@ -111,20 +111,16 @@ pub const Editor = struct {
         }
     }
 
-    fn updateCamera(editor: *Editor, options: Options) void {
-        const frame_time = d.Fps.frameTime();
+    fn updateCamera(editor: *Editor, dt: f32, options: Options) void {
         var movement: @Vector(3, f32) = @splat(0);
-        if (options.binds.forward.isDown()) movement += .{ 0, 1, 0 };
-        if (options.binds.left.isDown()) movement += .{ -1, 0, 0 };
-        if (options.binds.back.isDown()) movement += .{ 0, -1, 0 };
-        if (options.binds.right.isDown()) movement += .{ 1, 0, 0 };
-        if (options.binds.up.isDown()) movement += .{ 0, 0, 1 };
-        if (options.binds.down.isDown()) movement += .{ 0, 0, -1 };
-        movement *= @splat(options.speed * frame_time);
-        var rotation: d.Vec2 = .{
-            d.Input.Analog.Mouse.right.value(),
-            d.Input.Analog.Mouse.forward.value(),
-        };
+        if (options.controls.forward.isDown()) movement += .{ 0, 1, 0 };
+        if (options.controls.left.isDown()) movement += .{ -1, 0, 0 };
+        if (options.controls.back.isDown()) movement += .{ 0, -1, 0 };
+        if (options.controls.right.isDown()) movement += .{ 1, 0, 0 };
+        if (options.controls.up.isDown()) movement += .{ 0, 0, 1 };
+        if (options.controls.down.isDown()) movement += .{ 0, 0, -1 };
+        movement *= @splat(options.speed * dt);
+        var rotation = o.Input.Analog.Mouse.move.value();
         rotation *= @splat(options.sensitivity);
         editor.camera.update(movement, rotation, .{});
     }
@@ -133,25 +129,27 @@ pub const Editor = struct {
     fn updatePreview(editor: *Editor, options: Options) void {
         const preview_old = editor.preview;
 
-        if (options.binds.next_part.pressed()) {
+        if (options.controls.next_part.pressed()) {
             editor.preview.part = @enumFromInt(@mod(@intFromEnum(editor.preview.part) +% 1, @typeInfo(Part).@"enum".fields.len));
         }
-        if (options.binds.next_color.pressed()) {
+        if (options.controls.next_color.pressed()) {
             editor.preview.color = @enumFromInt(@mod(@intFromEnum(editor.preview.color) +% 1, @typeInfo(Color).@"enum".fields.len));
         }
-        if (options.binds.mirror.pressed()) {
+        if (options.controls.mirror.pressed()) {
             editor.preview.rotation = editor.preview.rotation.rotate(Placement.Rotation.mirror);
         }
-        if (d.Input.Analog.Mouse.wheel.value() > 0 or options.binds.rotate_cw.pressed()) {
+        const wheel = o.Input.Analog.Mouse.wheel.value();
+
+        if (wheel[1] > 0 or options.controls.rotate_cw.pressed()) {
             editor.preview.rotation = editor.preview.rotation.rotate(Placement.Rotation.z270);
         }
-        if (d.Input.Analog.Mouse.wheel.value() < 0 or options.binds.rotate_ccw.pressed()) {
+        if (wheel[1] < 0 or options.controls.rotate_ccw.pressed()) {
             editor.preview.rotation = editor.preview.rotation.rotate(Placement.Rotation.z90);
         }
 
-        const ray: d.Ray =
+        const ray: o.Ray =
             if (editor.cursor)
-                editor.camera.rayFromScreen(d.Window.mousePosition())
+                editor.camera.rayFromScreen(o.window.mousePosition())
             else
                 editor.camera.ray();
         const ray_result = editor.robot.rayCollision(ray);
@@ -173,8 +171,8 @@ pub const Editor = struct {
 
     pub fn render(editor: Editor) void {
         { // 3d
-            editor.camera.beginRender();
-            defer editor.camera.endRender();
+            o.render.begin(editor.camera);
+            defer o.render.end();
             editor.robot.render(editor.render_mode);
             if (editor.preview.placement) |placement|
                 editor.preview.part.render(
@@ -196,34 +194,42 @@ pub const Editor = struct {
     }
 
     fn crosshair(editor: Editor) void {
-        const V = d.Vec2;
-        const size_h = V{ 11, 1 };
+        const V = @Vector(2, f32);
+        const size_h = V{ 11, 1 } * @as(V, @splat(0.5));
         const size_v = @shuffle(f32, size_h, undefined, @Vector(2, i32){ 1, 0 });
         const border = 1;
         const color = if (editor.preview.collides) Color.collision else Color.black.rgba();
-        const border_color = d.Color.white;
-        const center = V{ @floatFromInt(d.Window.width()), @floatFromInt(d.Window.height()) } * @as(V, @splat(0.5));
-        const size_border_h = size_h + @as(V, @splat(border * 2));
-        const size_border_v = size_v + @as(V, @splat(border * 2));
+        const border_color = o.Color.white;
+        const center = o.draw.size() * @as(V, @splat(0.5));
+        const size_border_h = size_h + @as(V, @splat(border));
+        const size_border_v = size_v + @as(V, @splat(border));
 
-        d.Window.Draw.rect(
-            center - size_border_h * @as(V, @splat(0.5)),
-            size_border_h,
+        o.draw.rect(
+            .{
+                .min = center - size_border_h,
+                .max = center + size_border_h,
+            },
             border_color,
         );
-        d.Window.Draw.rect(
-            center - size_border_v * @as(V, @splat(0.5)),
-            size_border_v,
+        o.draw.rect(
+            .{
+                .min = center - size_border_v,
+                .max = center + size_border_v,
+            },
             border_color,
         );
-        d.Window.Draw.rect(
-            center - size_h * @as(V, @splat(0.5)),
-            size_h,
+        o.draw.rect(
+            .{
+                .min = center - size_h,
+                .max = center + size_h,
+            },
             color,
         );
-        d.Window.Draw.rect(
-            center - size_v * @as(V, @splat(0.5)),
-            size_v,
+        o.draw.rect(
+            .{
+                .min = center - size_v,
+                .max = center + size_v,
+            },
             color,
         );
     }

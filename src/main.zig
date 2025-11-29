@@ -1,6 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const c = @import("c.zig");
+const o = @import("o.zig");
 const renderer = @import("renderer.zig");
 const parts = @import("parts.zig");
 const State = @import("state.zig").State;
@@ -13,14 +13,12 @@ var state: State = undefined;
 pub fn main() !void {
     try init();
     defer deinit();
-    while (try state.run()) {}
+    while (!o.window.shouldClose() and try state.run()) {}
 }
 
 fn init() !void {
-    try c.Window.init(1280, 720, "robo");
-    errdefer c.Window.deinit();
-    // framerate:
-    c.Fps.set(c.Window.monitor().rate());
+    o.window.begin(1280, 720, "robo");
+    errdefer o.window.end();
 
     // working directory
     const dir_path = try std.fs.selfExeDirPathAlloc(allocator);
@@ -38,6 +36,6 @@ fn deinit() void {
     state.deinit();
     parts.unloadData(allocator);
     renderer.deinit();
-    c.Window.deinit();
+    o.window.end();
     if (gpa.deinit() == .leak) @panic("MEMORY LEAKED");
 }
