@@ -8,7 +8,7 @@ var buffer: [buffer_size]RenderInfo = undefined;
 var length: usize = 0;
 var model: o.Model = undefined;
 
-var partVboId: c_uint = undefined;
+var vertexBuffer: o.Gpu.VertexBuffer(RenderInfo, .{ .write = .{ .by = .cpu, .n = .many } }) = undefined;
 
 pub var shader: o.Shader = undefined;
 
@@ -20,7 +20,7 @@ const RenderInfo = struct {
     color: RenderColor,
 };
 
-pub fn init() void {
+pub fn init() !void {
     if (@sizeOf(RenderInfo) != 16 * @sizeOf(f32)) @compileError("nope");
     shader = .load(
         @embedFile("shaders/instanced.vert.glsl"),
@@ -30,11 +30,12 @@ pub fn init() void {
     shader.internal.locs[c.SHADER_LOC_MATRIX_MVP] = shader.locationUniform("mvp");
     shader.internal.locs[c.SHADER_LOC_VERTEX_INSTANCE_TX + 1] = shader.locationInput("instanceColor");
 
-    partVboId = o.loadVertexBuffer(RenderInfo, buffer[0..buffer_size], false);
+    vertexBuffer = try .init(&buffer);
+    errdefer vertexBuffer.deinit();
 }
 
 pub fn deinit() void {
-    c.rlUnloadVertexBuffer(partVboId);
+    vertexBuffer.deinit();
 
     shader.unload();
 }
@@ -117,7 +118,7 @@ fn drawMeshInstanced(mesh: o.Mesh, material: c.Material, renderInfos: []RenderIn
     // Enable mesh VAO to attach new buffer
     _ = c.rlEnableVertexArray(mesh.internal.vaoId);
 
-    o.updateVertexBuffer(partVboId, RenderInfo, renderInfos, 0);
+    vertexBuffer.update(0, renderInfos);
 
     // Instances transformation matrices are sent to shader attribute location: SHADER_LOC_VERTEX_INSTANCE_TX
     for (0..4) |i_| {

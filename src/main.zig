@@ -26,7 +26,7 @@ fn init() !void {
     try misc.set_cwd(dir_path);
     try misc.cwd("..");
     try misc.cwd("..");
-    renderer.init();
+    try renderer.init();
     try parts.loadData(allocator);
 
     state = try State.init(allocator);

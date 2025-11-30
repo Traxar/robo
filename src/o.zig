@@ -21,8 +21,9 @@ pub const Camera = @import("o/camera.zig");
 pub const Ray = @import("o/ray.zig");
 pub const Mesh = @import("o/mesh.zig");
 
-//?
+//Namespace //TODO decide upper/lower case?
 pub const Input = @import("o/input.zig");
+pub const Gpu = @import("o/gpu.zig");
 
 pub const Model = struct {
     internal: c.Model,
@@ -67,14 +68,6 @@ pub const Shader = struct {
         return c.GetShaderLocationAttrib(shader.internal, name);
     }
 };
-
-pub fn loadVertexBuffer(T: type, data: []T, dynamic: bool) c_uint {
-    return c.rlLoadVertexBuffer(data.ptr, @intCast(data.len * @sizeOf(T)), dynamic);
-}
-
-pub fn updateVertexBuffer(vboId: c_uint, T: type, data: []T, offset: usize) void {
-    c.rlUpdateVertexBuffer(vboId, data.ptr, @intCast(data.len * @sizeOf(T)), @intCast(offset));
-}
 
 /// `stride` and `offset` are relative to the `BaseType`
 /// `compSize` defines how many elements of `BaseType` go into this attribute

@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const panic = @import("util.zig").panic;
 
 var current: State = .none;
 
@@ -50,11 +51,4 @@ pub fn begin(new: State) void {
 pub fn end(current_: State) void {
     is(current_);
     current = current.parent();
-}
-
-fn panic(comptime format: []const u8, args: anytype) noreturn {
-    switch (comptime builtin.mode) {
-        .Debug, .ReleaseSafe => std.debug.panic(format, args),
-        .ReleaseFast, .ReleaseSmall => unreachable,
-    }
 }
