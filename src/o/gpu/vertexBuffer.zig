@@ -24,15 +24,12 @@ pub fn Type(Vertex: type, options: Options) type {
             };
         }
 
-        pub fn deinit(buffer: *VertexBuffer) void {
-            if (buffer.id == 0) panic("buffer was not initialized", .{});
+        pub fn deinit(buffer: VertexBuffer) void {
             c.rlUnloadVertexBuffer(buffer.id);
-            buffer.id = 0;
         }
 
         pub fn update(buffer: VertexBuffer, offset: usize, changes: []const Vertex) void {
             if (options.write.n == .one) @compileError("buffer was specified to be constant");
-            if (buffer.id == 0) panic("buffer was not initialized", .{});
             if (offset + changes.len > buffer.len) panic("out of range", .{});
             c.rlUpdateVertexBuffer(
                 buffer.id,
@@ -43,7 +40,6 @@ pub fn Type(Vertex: type, options: Options) type {
         }
 
         pub fn activate(buffer: VertexBuffer) void {
-            if (buffer.id == 0) panic("buffer was not initialized", .{});
             c.rlEnableVertexBuffer(buffer.id);
         }
     };
