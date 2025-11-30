@@ -4,5 +4,6 @@ hobby game project
 
 ## Getting Started
 
-1. Clone this repo
-2. Run with `zig build run`
+1. Install `git` and `zig`.
+2. Clone this repository.
+3. Run with `zig build run`.
