@@ -3,14 +3,16 @@ const math = std.math;
 
 pub const c = @import("o/c.zig").c;
 
-//Globals
+// globals and namespaces
 pub const window = @import("o/window.zig");
 pub const draw = @import("o/draw.zig");
 pub const render = @import("o/render.zig");
 pub const gui = @import("o/gui.zig");
 pub const cursor = @import("o/cursor.zig");
+pub const input = @import("o/input.zig");
+pub const gpu = @import("o/gpu.zig");
 
-//Types
+// Types
 pub const Box = @import("o/box.zig");
 pub const Rect = @import("o/rect.zig");
 pub const Color = @import("o/color.zig");
@@ -20,10 +22,6 @@ pub const Transform = Math.Transform(3, f32);
 pub const Camera = @import("o/camera.zig");
 pub const Ray = @import("o/ray.zig");
 pub const Mesh = @import("o/mesh.zig");
-
-//Namespace //TODO decide upper/lower case?
-pub const Input = @import("o/input.zig");
-pub const Gpu = @import("o/gpu.zig");
 
 pub const Model = struct {
     internal: c.Model,

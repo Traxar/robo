@@ -1,5 +1,5 @@
 const o = @import("o.zig");
-const DigitalInput = o.Input.Digital;
+const DigitalInput = o.input.Digital;
 const Allocator = @import("std").mem.Allocator;
 const Camera = o.Camera;
 const Robot = @import("robot.zig").Type(.{
@@ -120,7 +120,7 @@ pub const Editor = struct {
         if (options.controls.up.isDown()) movement += .{ 0, 0, 1 };
         if (options.controls.down.isDown()) movement += .{ 0, 0, -1 };
         movement *= @splat(options.speed * dt);
-        var rotation = o.Input.Analog.Mouse.move.value();
+        var rotation = o.input.Analog.Mouse.move.value();
         rotation *= @splat(options.sensitivity);
         editor.camera.update(movement, rotation, .{});
     }
@@ -138,7 +138,7 @@ pub const Editor = struct {
         if (options.controls.mirror.pressed()) {
             editor.preview.rotation = editor.preview.rotation.rotate(Placement.Rotation.mirror);
         }
-        const wheel = o.Input.Analog.Mouse.wheel.value();
+        const wheel = o.input.Analog.Mouse.wheel.value();
 
         if (wheel[1] > 0 or options.controls.rotate_cw.pressed()) {
             editor.preview.rotation = editor.preview.rotation.rotate(Placement.Rotation.z270);

@@ -8,7 +8,7 @@ var buffer: [buffer_size]RenderInfo = undefined;
 var length: usize = 0;
 var model: o.Model = undefined;
 
-var vertexBuffer: o.Gpu.VertexBuffer(RenderInfo, .{ .write = .{ .by = .cpu, .n = .many } }) = undefined;
+var vertexBuffer: o.gpu.VertexBuffer(RenderInfo, .{ .write = .{ .by = .cpu, .n = .many } }) = undefined;
 
 pub var shader: o.Shader = undefined;
 
@@ -134,8 +134,6 @@ fn drawMeshInstanced(mesh: o.Mesh, material: c.Material, renderInfos: []RenderIn
 
     c.rlDisableVertexBuffer();
 
-    c.rlDisableVertexArray();
-
     // Accumulate internal matrix transform (push/pop) and view matrix
     // NOTE: In this case, model instance transformation must be computed in the shader
     const matModelView = c.MatrixMultiply(c.rlGetMatrixTransform(), matView);
@@ -169,55 +167,53 @@ fn drawMeshInstanced(mesh: o.Mesh, material: c.Material, renderInfos: []RenderIn
 
     // Try binding vertex array objects (VAO)
     // or use VBOs if not possible
-    if (!c.rlEnableVertexArray(mesh.internal.vaoId)) {
-        // Bind mesh VBO data: vertex position (shader-location = 0)
-        c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION]);
-        c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_POSITION]), 3, c.RL_FLOAT, false, 0, 0);
-        c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_POSITION]));
+    // Bind mesh VBO data: vertex position (shader-location = 0)
+    c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION]);
+    c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_POSITION]), 3, c.RL_FLOAT, false, 0, 0);
+    c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_POSITION]));
 
-        // Bind mesh VBO data: vertex texcoords (shader-location = 1)
-        c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD]);
-        c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD01]), 2, c.RL_FLOAT, false, 0, 0);
-        c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD01]));
+    // Bind mesh VBO data: vertex texcoords (shader-location = 1)
+    c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD]);
+    c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD01]), 2, c.RL_FLOAT, false, 0, 0);
+    c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD01]));
 
-        if (material.shader.locs[c.SHADER_LOC_VERTEX_NORMAL] != -1) {
-            // Bind mesh VBO data: vertex normals (shader-location = 2)
-            c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL]);
-            c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_NORMAL]), 3, c.RL_FLOAT, false, 0, 0);
-            c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_NORMAL]));
-        }
-
-        // Bind mesh VBO data: vertex colors (shader-location = 3, if available)
-        if (material.shader.locs[c.SHADER_LOC_VERTEX_COLOR] != -1) {
-            if (mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_COLOR] != 0) {
-                c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_COLOR]);
-                c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR]), 4, c.RL_UNSIGNED_BYTE, true, 0, 0);
-                c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR]));
-            } else {
-                // Set default value for unused attribute
-                // NOTE: Required when using default shader and no VAO support
-                const value = [_]f32{ 1.0, 1.0, 1.0, 1.0 };
-                c.rlSetVertexAttributeDefault(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR], &value, c.SHADER_ATTRIB_VEC4, 4);
-                c.rlDisableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR]));
-            }
-        }
-
-        // Bind mesh VBO data: vertex tangents (shader-location = 4, if available)
-        if (material.shader.locs[c.SHADER_LOC_VERTEX_TANGENT] != -1) {
-            c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TANGENT]);
-            c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TANGENT]), 4, c.RL_FLOAT, false, 0, 0);
-            c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TANGENT]));
-        }
-
-        // Bind mesh VBO data: vertex texcoords2 (shader-location = 5, if available)
-        if (material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD02] != -1) {
-            c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD2]);
-            c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD02]), 2, c.RL_FLOAT, false, 0, 0);
-            c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD02]));
-        }
-
-        if (mesh.internal.indices != null) c.rlEnableVertexBufferElement(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES]);
+    if (material.shader.locs[c.SHADER_LOC_VERTEX_NORMAL] != -1) {
+        // Bind mesh VBO data: vertex normals (shader-location = 2)
+        c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL]);
+        c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_NORMAL]), 3, c.RL_FLOAT, false, 0, 0);
+        c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_NORMAL]));
     }
+
+    // Bind mesh VBO data: vertex colors (shader-location = 3, if available)
+    if (material.shader.locs[c.SHADER_LOC_VERTEX_COLOR] != -1) {
+        if (mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_COLOR] != 0) {
+            c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_COLOR]);
+            c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR]), 4, c.RL_UNSIGNED_BYTE, true, 0, 0);
+            c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR]));
+        } else {
+            // Set default value for unused attribute
+            // NOTE: Required when using default shader and no VAO support
+            const value = [_]f32{ 1.0, 1.0, 1.0, 1.0 };
+            c.rlSetVertexAttributeDefault(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR], &value, c.SHADER_ATTRIB_VEC4, 4);
+            c.rlDisableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_COLOR]));
+        }
+    }
+
+    // Bind mesh VBO data: vertex tangents (shader-location = 4, if available)
+    if (material.shader.locs[c.SHADER_LOC_VERTEX_TANGENT] != -1) {
+        c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TANGENT]);
+        c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TANGENT]), 4, c.RL_FLOAT, false, 0, 0);
+        c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TANGENT]));
+    }
+
+    // Bind mesh VBO data: vertex texcoords2 (shader-location = 5, if available)
+    if (material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD02] != -1) {
+        c.rlEnableVertexBuffer(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD2]);
+        c.rlSetVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD02]), 2, c.RL_FLOAT, false, 0, 0);
+        c.rlEnableVertexAttribute(@intCast(material.shader.locs[c.SHADER_LOC_VERTEX_TEXCOORD02]));
+    }
+
+    if (mesh.internal.indices != null) c.rlEnableVertexBufferElement(mesh.internal.vboId[c.RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES]);
 
     // Calculate model-view-projection matrix (MVP)
     const matModelViewProjection = c.MatrixMultiply(matModelView, matProjection);

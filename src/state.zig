@@ -37,7 +37,7 @@ pub const State = struct {
     }
 
     pub fn run(state: *State) !bool {
-        if (o.Input.Digital.Key.escape.pressed()) {
+        if (o.input.Digital.Key.escape.pressed()) {
             state.menu.enabled = !state.menu.enabled;
         }
         if (!state.menu.enabled) {
