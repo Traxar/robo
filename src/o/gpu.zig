@@ -3,6 +3,7 @@ const c = @import("c.zig").c;
 pub const VertexBuffer = @import("gpu/vertexBuffer.zig").Type;
 pub const IndexBuffer = @import("gpu/indexBuffer.zig").Type;
 pub const StorageBuffer = @import("gpu/storageBuffer.zig").Type;
+pub const Program = @import("gpu/program.zig");
 
 pub const BufferUsage = struct {
     write: Use = .{ .by = .cpu, .n = .one },

@@ -45,28 +45,6 @@ pub const Model = struct {
     }
 };
 
-pub const Shader = struct {
-    internal: c.Shader,
-
-    pub fn load(vert_glsl: [*c]const u8, frag_glsl: [*c]const u8) Shader {
-        return .{
-            .internal = c.LoadShaderFromMemory(vert_glsl, frag_glsl),
-        };
-    }
-
-    pub fn unload(shader: Shader) void {
-        c.UnloadShader(shader.internal);
-    }
-
-    pub fn locationUniform(shader: Shader, name: [*c]const u8) c_int {
-        return c.GetShaderLocation(shader.internal, name);
-    }
-
-    pub fn locationInput(shader: Shader, name: [*c]const u8) c_int {
-        return c.GetShaderLocationAttrib(shader.internal, name);
-    }
-};
-
 /// `stride` and `offset` are relative to the `BaseType`
 /// `compSize` defines how many elements of `BaseType` go into this attribute
 pub fn setVertexAttribute(attribute: c_int, Type: type, stride: usize, offset: usize) void {

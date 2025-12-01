@@ -18,9 +18,6 @@ pub fn loadData(gpa: Allocator) !void {
     try misc.cwd("models");
     inline for (@typeInfo(Part).@"enum".fields, 0..) |field, i| {
         models[i] = .load(field.name ++ ".obj");
-        for (0..@intCast(models[i].internal.materialCount)) |j| {
-            models[i].internal.materials[j].shader = renderer.shader.internal;
-        }
         model_bounds[i] = models[i].bounds();
     }
     try misc.cwd("..");
